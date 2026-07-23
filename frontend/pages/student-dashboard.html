@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        body { background: #0f0f0f; color: #eee; font-family: 'Segoe UI', sans-serif; }
+        .navbar { background: #1a1a1a; border-bottom: 1px solid #333; }
+        .card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+        .stat-card { background: #1a1a1a; border: 1px solid #2a2a2a; }
+        .stat-card .number { color: #a78bfa; }
+        h3 { color: #a78bfa; }
+        .progress-step { display:flex; align-items:flex-start; gap:16px; padding:16px 0; border-bottom:1px solid #2a2a2a; }
+        .progress-step:last-child { border-bottom: none; }
+        .step-circle { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; flex-shrink:0; }
+        .step-done { background:#a78bfa; color:white; }
+        .step-active { background:transparent; border:2px solid #a78bfa; color:#a78bfa; }
+        .step-pending { background:transparent; border:2px solid #444; color:#666; }
+        .step-title { font-weight:600; font-size:15px; margin-bottom:4px; }
+        .step-sub { font-size:13px; color:#888; }
+        .score-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:20px; }
+        .score-box { background:#111; border:1px solid #2a2a2a; border-radius:10px; padding:20px; }
+        .score-box .big { font-size:48px; font-weight:900; color:#a78bfa; line-height:1; }
+        .score-box .big span { font-size:20px; color:#666; font-weight:400; }
+        .score-bar { height:6px; background:#333; border-radius:3px; margin-top:12px; }
+        .score-bar-fill { height:100%; background:#a78bfa; border-radius:3px; transition:width 0.5s; }
+        .profile-card { display:flex; align-items:center; gap:16px; padding:20px; background:#1a1a1a; border:1px solid #2a2a2a; border-radius:12px; margin-bottom:20px; }
+        .avatar { width:60px; height:60px; border-radius:12px; background:#a78bfa; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:700; color:white; }
+        .badge-orange { background:#a78bfa22; color:#a78bfa; border:1px solid #a78bfa; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; }
+        .badge-green { background:#00ff8822; color:#00cc66; border:1px solid #00cc66; padding:4px 12px; border-radius:20px; font-size:12px; }
+        table { width:100%; border-collapse:collapse; }
+        table th { color:#888; font-size:12px; text-transform:uppercase; padding:10px 12px; border-bottom:1px solid #2a2a2a; text-align:left; }
+        table td { padding:12px; border-bottom:1px solid #1e1e1e; font-size:14px; }
+        .btn { padding:10px 20px; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:14px; }
+        .btn-orange { background:#a78bfa; color:white; }
+        .btn-outline { background:transparent; border:1px solid #a78bfa; color:#a78bfa; }
+        .form-group { margin-bottom:16px; }
+        .form-group label { display:block; font-size:13px; color:#888; margin-bottom:6px; }
+        .form-group input, .form-group select, .form-group textarea {
+            width:100%; padding:10px 14px; background:#111; border:1px solid #333; border-radius:8px;
+            color:#eee; font-size:14px; outline:none;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color:#a78bfa; }
+        .alert { padding:12px; border-radius:8px; margin-bottom:12px; font-size:14px; display:none; }
+        .alert-error { background:#3d0000; color:#ff6b6b; border:1px solid #ff000044; }
+        .alert-success { background:#003d1a; color:#66ffaa; border:1px solid #00ff4444; }
+        .tabs { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+        .tab { padding:8px 18px; border-radius:20px; cursor:pointer; font-size:13px; font-weight:600; border:1px solid #333; color:#888; background:transparent; }
+        .tab.active { background:#a78bfa; color:white; border-color:#a78bfa; }
+        .section { display:none; }
+        .section.active { display:block; }
+        option { background:#1a1a1a; }
+        .upload-progress { background:#111; border:1px solid #333; border-radius:8px; padding:10px 14px; margin-top:8px; font-size:12px; color:#888; display:none; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar" style="padding:15px 30px; display:flex; justify-content:space-between; align-items:center;">
+    <span style="color:#a78bfa; font-weight:700; font-size:18px;">Internship Management System</span>
+    <div>
+        <span id="welcome-msg" style="color:#888; font-size:14px; margin-right:16px;"></span>
+        <button class="btn btn-outline" onclick="logout()" style="padding:6px 16px;">Logout</button>
+    </div>
+</nav>
+
+<div style="max-width:1000px; margin:30px auto; padding:0 20px;">
+
+    <div class="profile-card" id="profile-card">
+        <div class="avatar" id="avatar-initials">--</div>
+        <div style="flex:1">
+            <div style="font-size:18px; font-weight:700;" id="profile-name">Loading...</div>
+            <div style="color:#888; font-size:14px;" id="profile-sub">--</div>
+        </div>
+        <span class="badge-orange" id="profile-status">Active</span>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" onclick="showTab('overview')">Overview</button>
+        <button class="tab" onclick="showTab('browse')">Browse Internships</button>
+        <button class="tab" onclick="showTab('applications')">My Applications</button>
+        <button class="tab" onclick="showTab('reports')">📝 Progress Reports</button>
+        <button class="tab" onclick="showTab('viva')">Viva Assessment</button>
+    </div>
+
+    <!-- OVERVIEW TAB -->
+    <div class="section active" id="tab-overview">
+        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:20px;">
+            <div class="stat-card" style="border-radius:12px; padding:20px; text-align:center;">
+                <div class="number" style="font-size:32px; font-weight:800;" id="stat-apps">0</div>
+                <div style="color:#888; font-size:12px; margin-top:4px;">Applications</div>
+            </div>
+            <div class="stat-card" style="border-radius:12px; padding:20px; text-align:center;">
+                <div class="number" style="font-size:32px; font-weight:800;" id="stat-interns">0</div>
+                <div style="color:#888; font-size:12px; margin-top:4px;">Internships</div>
+            </div>
+            <div class="stat-card" style="border-radius:12px; padding:20px; text-align:center;">
+                <div class="number" style="font-size:32px; font-weight:800;" id="stat-evals">0</div>
+                <div style="color:#888; font-size:12px; margin-top:4px;">Evaluations</div>
+            </div>
+            <div class="stat-card" style="border-radius:12px; padding:20px; text-align:center;">
+                <div class="number" style="font-size:32px; font-weight:800;" id="stat-viva">0</div>
+                <div style="color:#888; font-size:12px; margin-top:4px;">Viva Done</div>
+            </div>
+        </div>
+        <div class="card">
+            <h3 style="margin-bottom:16px;">Internship Progress</h3>
+            <div id="progress-steps">
+                <div class="progress-step">
+                    <div class="step-circle step-pending" id="step1-circle">1</div>
+                    <div><div class="step-title">Application</div><div class="step-sub" id="step1-sub">Not submitted yet</div></div>
+                </div>
+                <div class="progress-step">
+                    <div class="step-circle step-pending" id="step2-circle">2</div>
+                    <div><div class="step-title">Credit Verification</div><div class="step-sub" id="step2-sub">Pending HOD Review</div></div>
+                </div>
+                <div class="progress-step">
+                    <div class="step-circle step-pending" id="step3-circle">3</div>
+                    <div><div class="step-title">Viva Assessment</div><div class="step-sub" id="step3-sub">Not scheduled</div></div>
+                </div>
+                <div class="progress-step">
+                    <div class="step-circle step-pending" id="step4-circle">4</div>
+                    <div><div class="step-title">Employer Evaluation</div><div class="step-sub" id="step4-sub">Pending</div></div>
+                </div>
+            </div>
+        </div>
+        <div class="score-grid" id="score-grid" style="display:none;">
+            <div class="score-box">
+                <div style="color:#888; font-size:13px; margin-bottom:8px;">Employer Score</div>
+                <div class="big" id="employer-score">--<span>/100</span></div>
+                <div class="score-bar"><div class="score-bar-fill" id="employer-bar" style="width:0%"></div></div>
+            </div>
+            <div class="score-box">
+                <div style="color:#888; font-size:13px; margin-bottom:8px;">Viva</div>
+                <div class="big" id="viva-score">--<span>/100</span></div>
+                <div class="score-bar"><div class="score-bar-fill" id="viva-bar" style="width:0%"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BROWSE TAB -->
+    <div class="section" id="tab-browse">
+        <div class="card">
+            <h3 style="margin-bottom:20px;">Available Internships</h3>
+            <div id="listings-container"><p style="color:#888; text-align:center;">Loading...</p></div>
+        </div>
+    </div>
+
+    <!-- APPLICATIONS TAB -->
+    <div class="section" id="tab-applications">
+        <div class="card">
+            <h3 style="margin-bottom:20px;">My Applications</h3>
+            <table>
+                <thead><tr><th>Position</th><th>Company</th><th>Applied</th><th>Status</th></tr></thead>
+                <tbody id="applications-table">
+                    <tr><td colspan="4" style="text-align:center;color:#888">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- REPORTS TAB -->
+    <div class="section" id="tab-reports">
+        <div class="card">
+            <h3 style="margin-bottom:6px;">Progress Reports</h3>
+            <p style="color:#888; font-size:13px; margin-bottom:20px;">Submit weekly or monthly internship progress reports. Your coordinator reviews and approves them.</p>
+            <div id="workflow-status-bar" style="margin-bottom:20px;"></div>
+            <div class="alert alert-error" id="report-error"></div>
+            <div class="alert alert-success" id="report-success"></div>
+            <div class="form-group">
+                <label style="display:block; font-size:12px; color:#888; margin-bottom:6px; text-transform:uppercase; letter-spacing:.5px;">Report Type</label>
+                <select id="report-type">
+                    <option value="weekly">Weekly Report</option>
+                    <option value="monthly">Monthly Report</option>
+                    <option value="midterm">Mid-term Report</option>
+                    <option value="final">Final Report</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label style="display:block; font-size:12px; color:#888; margin-bottom:6px; text-transform:uppercase; letter-spacing:.5px;">Report Content</label>
+                <textarea id="report-text" rows="7" placeholder="Describe tasks completed, skills learned, challenges faced..."></textarea>
+            </div>
+            <div class="form-group">
+                <label style="display:block; font-size:12px; color:#888; margin-bottom:6px; text-transform:uppercase; letter-spacing:.5px;">Attach File (optional)</label>
+                <input type="file" id="report-file" accept=".pdf,.doc,.docx,.txt" style="color:#888; cursor:pointer;">
+                <div class="upload-progress" id="report-upload-progress">⏳ Uploading file to storage...</div>
+                <div style="font-size:11px; color:#666; margin-top:5px;">File will be uploaded to Supabase Storage.</div>
+            </div>
+            <button class="btn btn-orange" onclick="submitProgressReport()">Submit Report</button>
+        </div>
+        <div class="card">
+            <h3 style="margin-bottom:16px;">My Submitted Reports</h3>
+            <div id="my-reports-list"><p style="color:#888; font-size:13px;">Loading...</p></div>
+        </div>
+    </div>
+
+    <!-- VIVA TAB -->
+    <div class="section" id="tab-viva">
+        <div class="card" id="viva-container">
+            <h3 style="margin-bottom:20px;">Viva Assessment</h3>
+            <p style="color:#888;">Loading viva details...</p>
+        </div>
+    </div>
+
+</div>
+
+<!-- Apply Modal -->
+<div id="apply-modal" style="display:none; position:fixed; inset:0; background:#000000cc; z-index:100; align-items:center; justify-content:center;">
+    <div style="background:#1a1a1a; border:1px solid #333; border-radius:16px; padding:32px; width:90%; max-width:500px;">
+        <h3 style="color:#a78bfa; margin-bottom:20px;">Apply for Internship</h3>
+        <div id="apply-listing-info" style="background:#111; padding:12px; border-radius:8px; margin-bottom:16px; font-size:14px; color:#aaa;"></div>
+        <div class="alert alert-error" id="modal-error"></div>
+        <div class="alert alert-success" id="modal-success"></div>
+        <div class="form-group">
+            <label style="display:flex; justify-content:space-between; align-items:center;">
+                <span>Cover Letter</span>
+                <label style="cursor:pointer; font-size:12px; color:#a78bfa; font-weight:600; display:flex; align-items:center; gap:6px;">
+                    <input type="checkbox" id="cover-file-toggle" onchange="toggleCoverMode()" style="width:auto; margin:0;"> Attach file instead
+                </label>
+            </label>
+            <textarea id="cover-letter" rows="5" placeholder="Why are you interested in this position?"></textarea>
+            <div id="cover-file-group" style="display:none; margin-top:10px;">
+                <input type="file" id="cover-file" accept=".pdf,.doc,.docx" style="color:#aaa; cursor:pointer; width:100%;">
+                <div class="upload-progress" id="cover-upload-progress">⏳ Uploading cover letter...</div>
+                <div style="font-size:11px; color:#666; margin-top:6px;">File will be uploaded to Supabase Storage.</div>
+            </div>
+        </div>
+        <div style="display:flex; gap:12px;">
+            <button class="btn btn-orange" onclick="submitApplication()" style="flex:1;">Submit Application</button>
+            <button class="btn" onclick="closeModal()" style="background:#333; color:#eee;">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const API           = 'http://127.0.0.1:5000/api'
+const SUPABASE_URL  = 'https://lwrlutrxhylxqukwzvrd.supabase.co'
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3cmx1dHJ4aHlseHF1a3d6dnJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MDg3ODUsImV4cCI6MjA5NTE4NDc4NX0.B8wkDEHDrjSaGKz1W7Ee9mcrAJJ9GnjOcxCzrNBQ_68'
+const STORAGE_BUCKET = 'internship-files'
+
+const token   = localStorage.getItem('token')
+const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+let selectedListingId = null
+
+if (!token) window.location.href = 'login.html'
+function logout() { localStorage.clear(); window.location.href = 'login.html' }
+
+const name = localStorage.getItem('name') || 'Student'
+const dept = localStorage.getItem('department') || ''
+document.getElementById('welcome-msg').textContent  = name
+document.getElementById('profile-name').textContent = name
+const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2)
+document.getElementById('avatar-initials').textContent = initials
+if (dept) document.getElementById('profile-sub').textContent = dept
+
+// ── Supabase Storage upload ───────────────────────────────────
+async function uploadToSupabase(file, folder) {
+    const safeName  = file.name.replace(/\s+/g, '_')
+    const filePath  = `${folder}/${Date.now()}_${safeName}`
+    const uploadUrl = `${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${filePath}`
+    const res = await fetch(uploadUrl, {
+        method:  'POST',
+        headers: {
+            'Authorization': `Bearer ${SUPABASE_ANON}`,
+            'Content-Type':  file.type || 'application/octet-stream',
+            'x-upsert':      'true'
+        },
+        body: file
+    })
+    if (!res.ok) throw new Error('Upload failed: ' + res.statusText)
+    return `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${filePath}`
+}
+
+function showTab(tab) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'))
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
+    document.getElementById('tab-' + tab).classList.add('active')
+    event.target.classList.add('active')
+    if (tab === 'browse')       loadListings()
+    if (tab === 'applications') loadApplications()
+    if (tab === 'reports')      loadReportsTab()
+    if (tab === 'viva')         loadViva()
+}
+
+// ── OVERVIEW ─────────────────────────────────────────────────
+async function loadOverview() {
+    try {
+        const [appsRes, internsRes, evalsRes, vivaRes] = await Promise.all([
+            fetch(`${API}/applications/my`, { headers }),
+            fetch(`${API}/internships/`,    { headers }),
+            fetch(`${API}/evaluations/`,    { headers }),
+            fetch(`${API}/viva/my`,         { headers })
+        ])
+        const apps   = await appsRes.json()
+        const interns = await internsRes.json()
+        const evals  = await evalsRes.json()
+        const vivas  = await vivaRes.json()
+
+        document.getElementById('stat-apps').textContent   = Array.isArray(apps)   ? apps.length   : 0
+        document.getElementById('stat-interns').textContent = Array.isArray(interns) ? interns.length : 0
+        document.getElementById('stat-evals').textContent  = Array.isArray(evals)  ? evals.length  : 0
+        document.getElementById('stat-viva').textContent   = Array.isArray(vivas)  ? vivas.length  : 0
+
+        const hasApp      = Array.isArray(apps) && apps.length > 0
+        const acceptedApp = Array.isArray(apps) && apps.find(a => a.status === 'accepted')
+        const hasEval     = Array.isArray(evals) && evals.length > 0
+        const hasViva     = Array.isArray(vivas) && vivas.length > 0
+
+        // Step 1 — Application
+        if (hasApp) {
+            document.getElementById('step1-circle').className   = 'step-circle step-done'
+            document.getElementById('step1-circle').textContent = '✓'
+            document.getElementById('step1-sub').textContent    = acceptedApp ? 'Submitted & Approved' : 'Submitted — Awaiting Review'
+        }
+
+        // Step 2 — Credit Verification (fetch from workflow)
+        try {
+            const wfRes = await fetch(`${API}/workflow/my`, { headers })
+            const wf    = await wfRes.json()
+            if (wf && wf.credit_verification) {
+                document.getElementById('step2-circle').className   = 'step-circle step-done'
+                document.getElementById('step2-circle').textContent = '✓'
+                document.getElementById('step2-sub').textContent    = 'Hours verified by coordinator'
+            } else if (wf && wf.current_stage === 'credit_verification') {
+                document.getElementById('step2-circle').className = 'step-circle step-active'
+                document.getElementById('step2-sub').textContent  = 'Under review by coordinator'
+            }
+        } catch(e) { /* silent */ }
+
+        // Step 3 — Viva Assessment
+        if (hasViva) {
+            const v = vivas[vivas.length - 1]
+            document.getElementById('step3-circle').className   = v.marks ? 'step-circle step-done' : 'step-circle step-active'
+            document.getElementById('step3-circle').textContent = v.marks ? '✓' : '3'
+            document.getElementById('step3-sub').textContent    = v.marks ? `Marks: ${v.marks}/100` : `Scheduled: ${v.date}`
+            if (v.marks) {
+                document.getElementById('viva-score').innerHTML = `${v.marks}<span>/100</span>`
+                document.getElementById('viva-bar').style.width = v.marks + '%'
+                document.getElementById('score-grid').style.display = 'grid'
+            }
+        }
+
+        // Step 4 — Employer Evaluation
+        if (hasEval) {
+            const latestEval = evals[evals.length - 1]
+            document.getElementById('step4-circle').className   = 'step-circle step-done'
+            document.getElementById('step4-circle').textContent = '✓'
+            document.getElementById('step4-sub').textContent    = `Score: ${latestEval.score}/100`
+            document.getElementById('score-grid').style.display = 'grid'
+            document.getElementById('employer-score').innerHTML = `${latestEval.score}<span>/100</span>`
+            document.getElementById('employer-bar').style.width = latestEval.score + '%'
+        }
+
+        const profileDept = localStorage.getItem('department') || ''
+        if (acceptedApp && acceptedApp.internship_listings?.employers?.company_name) {
+            document.getElementById('profile-sub').textContent = profileDept + ' · ' + acceptedApp.internship_listings.employers.company_name
+        } else if (profileDept) {
+            document.getElementById('profile-sub').textContent = profileDept
+        }
+    } catch(err) { console.error(err) }
+}
+
+// ── BROWSE ───────────────────────────────────────────────────
+async function loadListings() {
+    try {
+        const res      = await fetch(`${API}/listings/`, { headers })
+        const listings = await res.json()
+        const container = document.getElementById('listings-container')
+        if (!listings.length) {
+            container.innerHTML = '<p style="color:#888; text-align:center; padding:20px;">No internship listings available yet.</p>'
+            return
+        }
+        container.innerHTML = listings.map(l => `
+            <div style="background:#111; border:1px solid #2a2a2a; border-radius:10px; padding:20px; margin-bottom:16px;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div>
+                        <div style="font-size:16px; font-weight:700; color:#eee;">${l.title}</div>
+                        <div style="color:#a78bfa; font-size:13px; margin-top:4px;">${l.employers?.company_name || 'Company'} · ${l.employers?.industry || ''}</div>
+                        <div style="color:#888; font-size:13px; margin-top:8px;">${l.description || ''}</div>
+                        <div style="margin-top:10px; display:flex; gap:12px; flex-wrap:wrap;">
+                            <span style="color:#aaa; font-size:12px;">⏱ ${l.duration_weeks} weeks</span>
+                            <span style="color:#aaa; font-size:12px;">👥 ${l.positions} position(s)</span>
+                            ${l.required_skills ? `<span style="color:#aaa; font-size:12px;">🛠 ${l.required_skills}</span>` : ''}
+                        </div>
+                    </div>
+                    <button class="btn btn-orange" style="margin-left:16px; white-space:nowrap;"
+                        onclick="openApplyModal(${l.id}, '${(l.title||'').replace(/'/g,"\\'")}', '${(l.employers?.company_name||'').replace(/'/g,"\\'")}')">Apply Now</button>
+                </div>
+            </div>
+        `).join('')
+    } catch(err) { console.error(err) }
+}
+
+function openApplyModal(listingId, title, company) {
+    selectedListingId = listingId
+    document.getElementById('apply-listing-info').textContent = `${title} at ${company}`
+    document.getElementById('modal-error').style.display   = 'none'
+    document.getElementById('modal-success').style.display = 'none'
+    document.getElementById('cover-letter').value = ''
+    document.getElementById('apply-modal').style.display = 'flex'
+}
+function closeModal() { document.getElementById('apply-modal').style.display = 'none' }
+function toggleCoverMode() {
+    const fileMode = document.getElementById('cover-file-toggle').checked
+    document.getElementById('cover-letter').style.display    = fileMode ? 'none' : 'block'
+    document.getElementById('cover-file-group').style.display = fileMode ? 'block' : 'none'
+}
+
+async function submitApplication() {
+    const errEl = document.getElementById('modal-error')
+    const sucEl = document.getElementById('modal-success')
+    errEl.style.display = 'none'; sucEl.style.display = 'none'
+    if (!selectedListingId) return
+
+    const fileMode = document.getElementById('cover-file-toggle').checked
+    let cover_letter = ''
+
+    if (fileMode) {
+        const fileInput = document.getElementById('cover-file')
+        if (!fileInput.files.length) {
+            errEl.textContent = 'Please attach a cover letter file'
+            errEl.style.display = 'block'; return
+        }
+        try {
+            document.getElementById('cover-upload-progress').style.display = 'block'
+            const url = await uploadToSupabase(fileInput.files[0], 'cover-letters')
+            document.getElementById('cover-upload-progress').style.display = 'none'
+            cover_letter = url  // store full Supabase URL
+        } catch(e) {
+            document.getElementById('cover-upload-progress').style.display = 'none'
+            errEl.textContent = 'File upload failed: ' + e.message
+            errEl.style.display = 'block'; return
+        }
+    } else {
+        cover_letter = document.getElementById('cover-letter').value
+    }
+
+    try {
+        const res  = await fetch(`${API}/applications/`, {
+            method: 'POST', headers,
+            body: JSON.stringify({ listing_id: selectedListingId, cover_letter })
+        })
+        const data = await res.json()
+        if (!res.ok) {
+            errEl.textContent = data.error || 'Failed to apply'
+            errEl.style.display = 'block'; return
+        }
+        sucEl.textContent = 'Application submitted successfully!'
+        sucEl.style.display = 'block'
+        setTimeout(closeModal, 1500)
+        loadOverview()
+    } catch(err) {
+        errEl.textContent = 'Cannot connect to server'
+        errEl.style.display = 'block'
+    }
+}
+
+// ── APPLICATIONS ─────────────────────────────────────────────
+async function loadApplications() {
+    try {
+        const res  = await fetch(`${API}/applications/my`, { headers })
+        const apps = await res.json()
+        const tbl  = document.getElementById('applications-table')
+        if (!apps.length) {
+            tbl.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#888;padding:20px;">No applications yet.</td></tr>'
+            return
+        }
+        tbl.innerHTML = apps.map(a => `<tr>
+            <td>${a.internship_listings?.title || 'N/A'}</td>
+            <td>${a.internship_listings?.employers?.company_name || 'N/A'}</td>
+            <td>${a.created_at ? a.created_at.split('T')[0] : 'N/A'}</td>
+            <td><span class="badge-${a.status === 'accepted' ? 'green' : 'orange'}" style="padding:3px 10px; border-radius:12px; font-size:12px; font-weight:600;">${a.status}</span></td>
+        </tr>`).join('')
+    } catch(err) { console.error(err) }
+}
+
+// ── VIVA ─────────────────────────────────────────────────────
+function buildQuestionsHtml(v) {
+    if (!v.questions) return ''
+    const q = v.questions
+
+    // New format: full Supabase URL stored directly
+    const urlMatch = q.match(/\[MCQ_FILE_URL:([^\]]+)\]/)
+    if (urlMatch) {
+        const fileUrl     = urlMatch[1]
+        const instructions = q.replace(/\[MCQ_FILE_URL:[^\]]+\]\n?/, '').trim()
+        const fileName    = fileUrl.split('/').pop().replace(/^\d+_/, '')
+        let html = '<div style="background:#111; border:1px solid #2a2a2a; border-radius:8px; padding:16px; margin-bottom:16px;">'
+        html += '<div style="margin-bottom:10px; font-size:13px; color:#888; text-transform:uppercase; letter-spacing:.5px;">MCQ File from Employer</div>'
+        html += `<a href="${fileUrl}" target="_blank" style="color:#6c63ff; font-weight:700; font-size:15px; text-decoration:none;">📎 ${fileName} — Download</a>`
+        html += '<div style="font-size:12px; color:#666; margin-top:6px;">Click to download, complete the MCQ, then upload your answer sheet below.</div>'
+        if (instructions) html += `<div style="margin-top:12px; padding-top:12px; border-top:1px solid #2a2a2a; color:#aaa; font-size:13px; white-space:pre-wrap;">${instructions}</div>`
+        html += '</div>'
+        return html
+    }
+
+    // Legacy format: just a filename
+    const legacyMatch = q.match(/\[MCQ_FILE:([^\]]+)\]/)
+    if (legacyMatch) {
+        const fname = legacyMatch[1]
+        const instructions = q.replace(/\[MCQ_FILE:[^\]]+\]\n?/, '').trim()
+        let html = '<div style="background:#111; border:1px solid #2a2a2a; border-radius:8px; padding:16px; margin-bottom:16px;">'
+        html += '<div style="margin-bottom:10px; font-size:13px; color:#888; text-transform:uppercase; letter-spacing:.5px;">MCQ File from Employer</div>'
+        html += `<span style="color:#6c63ff; font-weight:700; font-size:15px;">📎 ${fname}</span>`
+        html += '<div style="font-size:12px; color:#666; margin-top:6px;">File not available for download (Supabase Storage not configured at time of upload).</div>'
+        if (instructions) html += `<div style="margin-top:12px; padding-top:12px; border-top:1px solid #2a2a2a; color:#aaa; font-size:13px; white-space:pre-wrap;">${instructions}</div>`
+        html += '</div>'
+        return html
+    }
+
+    return `<div style="background:#111; border:1px solid #2a2a2a; border-radius:8px; padding:16px; margin-bottom:16px; color:#ccc; font-size:14px; line-height:1.8; white-space:pre-wrap;">${q}</div>`
+}
+
+function buildVivaFormHtml(v) {
+    const type   = v.assessment_type || 'written'
+    const isFile = (type === 'mcq' || type === 'report')
+    let html = ''
+    if (isFile) {
+        const lbl = type === 'mcq' ? 'Upload Completed MCQ / Answer Sheet (PDF or Word)' : 'Upload Your Report (PDF or Word)'
+        html += `<div class="form-group"><label>${lbl}</label>`
+        html += '<input type="file" id="viva-file" accept=".pdf,.doc,.docx" style="background:#111; border:1px solid #333; border-radius:8px; padding:10px; color:#aaa; cursor:pointer; width:100%;">'
+        html += '<div class="upload-progress" id="viva-upload-progress">⏳ Uploading file...</div>'
+        html += '<div style="font-size:11px; color:#666; margin-top:6px;">File will be uploaded to Supabase Storage and shared with your employer.</div></div>'
+        html += '<div class="form-group"><label>Additional Notes (optional)</label>'
+        html += '<textarea id="viva-answers" rows="3" placeholder="Any notes..."></textarea></div>'
+    } else {
+        html += '<div class="form-group"><label>Your Answers</label>'
+        html += '<textarea id="viva-answers" rows="8" placeholder="Write your answers here..."></textarea></div>'
+    }
+    const btnLabel = type === 'report' ? 'Submit Report' : 'Submit Answers'
+    html += '<div class="alert alert-error" id="viva-error"></div>'
+    html += '<div class="alert alert-success" id="viva-success"></div>'
+    html += `<button class="btn btn-orange" onclick="submitVivaAnswers(${v.id},'${type}')">${btnLabel}</button>`
+    return html
+}
+
+async function loadViva() {
+    try {
+        const res   = await fetch(`${API}/viva/my`, { headers })
+        const vivas = await res.json()
+        const container = document.getElementById('viva-container')
+        if (!Array.isArray(vivas) || !vivas.length) {
+            container.innerHTML = '<h3 style="color:#a78bfa; margin-bottom:16px;">Viva Assessment</h3><p style="color:#888;">No viva scheduled yet.</p>'
+            return
+        }
+        const v = vivas[vivas.length - 1]
+        let alreadySubmitted = false
+        try {
+            const subRes = await fetch(`${API}/viva/${v.id}/submissions`, { headers })
+            const subs   = await subRes.json()
+            alreadySubmitted = Array.isArray(subs) && subs.length > 0
+        } catch(e) {}
+
+        const typeLabel = v.assessment_type === 'mcq' ? '📎 MCQ / Quiz Assessment'
+                        : v.assessment_type === 'report' ? '📄 Report Submission'
+                        : '✍️ Written Assessment'
+
+        let html = '<h3 style="color:#a78bfa; margin-bottom:20px;">Viva Assessment</h3>'
+        html += '<div style="background:#111; border:1px solid #2a2a2a; border-radius:10px; padding:20px; margin-bottom:20px;">'
+        html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">'
+        html += '<span style="font-weight:600;">Assessment Details</span>'
+        html += `<span class="badge-orange">${v.assessment_type || 'written'}</span></div>`
+        html += `<div style="color:#888; font-size:14px; margin-bottom:6px;">📅 Date: <span style="color:#eee;">${v.date || 'TBD'}</span></div>`
+        if (v.marks !== null && v.marks !== undefined)
+            html += `<div style="color:#888; font-size:14px; margin-bottom:6px;">🎯 Marks: <span style="color:#a78bfa; font-weight:700;">${v.marks}/100</span></div>`
+        if (v.remarks)
+            html += `<div style="color:#888; font-size:14px;">💬 Remarks: <span style="color:#eee;">${v.remarks}</span></div>`
+        html += '</div>'
+
+        if (alreadySubmitted) {
+            html += '<div style="background:#003d1a; border:1px solid #00ff4444; border-radius:8px; padding:16px; color:#66ffaa; text-align:center;">'
+            html += '✓ Submission received. ' + (v.marks !== null && v.marks !== undefined ? `Marks: ${v.marks}/100` : 'Awaiting grading by your employer.') + '</div>'
+        } else {
+            html += `<div class="card" style="margin-top:0;"><h4 style="color:#eee; margin-bottom:16px;">${typeLabel}</h4>`
+            html += buildQuestionsHtml(v)
+            html += buildVivaFormHtml(v)
+            html += '</div>'
+        }
+        container.innerHTML = html
+    } catch(err) { console.error(err) }
+}
+
+async function submitVivaAnswers(vivaId, assessmentType) {
+    const errEl = document.getElementById('viva-error')
+    const sucEl = document.getElementById('viva-success')
+    if (errEl) errEl.style.display = 'none'
+    if (sucEl) sucEl.style.display = 'none'
+
+    const answersEl = document.getElementById('viva-answers')
+    const answers   = answersEl ? answersEl.value : ''
+    let file_url    = ''
+
+    if (assessmentType === 'mcq' || assessmentType === 'report') {
+        const fileInput = document.getElementById('viva-file')
+        if (!fileInput || !fileInput.files.length) {
+            if (errEl) { errEl.textContent = 'Please attach your file before submitting'; errEl.style.display = 'block' }
+            return
+        }
+        try {
+            const prog = document.getElementById('viva-upload-progress')
+            if (prog) prog.style.display = 'block'
+            file_url = await uploadToSupabase(fileInput.files[0], 'viva-submissions')
+            if (prog) prog.style.display = 'none'
+        } catch(e) {
+            const prog = document.getElementById('viva-upload-progress')
+            if (prog) prog.style.display = 'none'
+            if (errEl) { errEl.textContent = 'File upload failed: ' + e.message; errEl.style.display = 'block' }
+            return
+        }
+    } else {
+        if (!answers.trim()) {
+            if (errEl) { errEl.textContent = 'Please write your answers before submitting'; errEl.style.display = 'block' }
+            return
+        }
+    }
+
+    try {
+        const res  = await fetch(`${API}/viva/${vivaId}/submit`, {
+            method: 'POST', headers,
+            body: JSON.stringify({ answers, file_url })
+        })
+        const data = await res.json()
+        if (!res.ok) {
+            if (errEl) { errEl.textContent = data.error || 'Failed to submit'; errEl.style.display = 'block' }
+            return
+        }
+        if (sucEl) { sucEl.textContent = 'Submitted successfully! Your employer will grade it soon.'; sucEl.style.display = 'block' }
+        setTimeout(() => loadViva(), 2000)
+    } catch(err) {
+        if (errEl) { errEl.textContent = 'Failed to submit'; errEl.style.display = 'block' }
+    }
+}
+
+// ── PROGRESS REPORTS ─────────────────────────────────────────
+async function loadReportsTab() {
+    try {
+        const wfRes = await fetch(API + '/workflow/my', { headers })
+        const wf    = await wfRes.json()
+        const bar   = document.getElementById('workflow-status-bar')
+        if (wf && wf.id) {
+            const stages = ['application_submitted','department_approval','credit_verification','viva_assessment','internship_progress','employer_evaluation']
+            const labels = ['Applied','Dept Approved','Credit Verified','Viva','Progress','Evaluation']
+            bar.innerHTML = '<div style="background:#111; border:1px solid #2a2a2a; border-radius:10px; padding:16px; margin-bottom:4px;">' +
+                '<div style="font-size:12px; color:#888; margin-bottom:10px; text-transform:uppercase; letter-spacing:.5px;">Your Department Workflow</div>' +
+                '<div style="display:flex; gap:0; overflow-x:auto; padding-bottom:4px;">' +
+                stages.map((s, i) => {
+                    const done      = wf[s]
+                    const active    = wf.current_stage === s
+                    const color     = done ? '#a78bfa' : active ? '#a78bfa66' : '#333'
+                    const textColor = done ? '#a78bfa' : active ? '#a78bfa' : '#555'
+                    return '<div style="display:flex; flex-direction:column; align-items:center; min-width:70px;">' +
+                        '<div style="width:28px; height:28px; border-radius:50%; background:' + (done?'#a78bfa':active?'transparent':'#1a1a1a') + '; border:2px solid ' + color + '; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:' + (done?'white':textColor) + ';">' + (done ? '✓' : (i+1)) + '</div>' +
+                        (i < stages.length-1 ? '<div style="width:100%; height:2px; background:' + (done?'#a78bfa':'#2a2a2a') + '; margin-top:14px;"></div>' : '') +
+                        '<div style="font-size:9px; color:' + textColor + '; margin-top:5px; text-align:center; line-height:1.2;">' + labels[i] + '</div>' +
+                        '</div>'
+                }).join('') + '</div>' +
+                (wf.supervisor_name ? '<div style="font-size:12px; color:#888; margin-top:10px;">👤 Supervisor: <span style="color:#eee;">' + wf.supervisor_name + '</span></div>' : '') +
+                '</div>'
+        } else {
+            bar.innerHTML = '<div style="background:#1a1a1a; border:1px solid #2a2a2a; border-radius:8px; padding:14px; color:#888; font-size:13px;">⚠️ No department workflow found. Your application needs to be approved by the coordinator first.</div>'
+        }
+        await loadMyReports(wf)
+    } catch(e) { console.error(e) }
+}
+
+async function loadMyReports(wf) {
+    const el = document.getElementById('my-reports-list')
+    if (!wf || !wf.id) { el.innerHTML = '<p style="color:#888; font-size:13px;">No workflow found.</p>'; return }
+    try {
+        const res     = await fetch(API + '/workflow/' + wf.id + '/reports', { headers })
+        const reports = await res.json()
+        if (!Array.isArray(reports) || !reports.length) {
+            el.innerHTML = '<p style="color:#888; font-size:13px;">No reports submitted yet.</p>'; return
+        }
+        el.innerHTML = reports.map(r => {
+            // file_name may be a full Supabase URL or just a name
+            const isUrl    = r.file_name && r.file_name.startsWith('http')
+            const dispName = isUrl ? r.file_name.split('/').pop().replace(/^\d+_/, '') : r.file_name
+            return '<div style="background:#111; border:1px solid #2a2a2a; border-radius:8px; padding:16px; margin-bottom:12px;">' +
+                '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">' +
+                '<span style="font-size:12px; color:#888;">' + (r.submitted_at ? r.submitted_at.split('T')[0] : 'N/A') + '</span>' +
+                '<span style="padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600; background:' + (r.approved ? '#003d1a' : '#3d3000') + '; color:' + (r.approved ? '#22c55e' : '#f59e0b') + ';">' + (r.approved ? '✓ Approved' : '⏳ Pending Review') + '</span>' +
+                '</div>' +
+                (r.file_name ? (isUrl
+                    ? `<div style="margin-bottom:8px;"><a href="${r.file_name}" target="_blank" style="color:#a78bfa; font-size:12px; text-decoration:none;">📎 ${dispName}</a></div>`
+                    : `<div style="color:#a78bfa; font-size:12px; margin-bottom:8px;">📎 ${dispName}</div>`)
+                : '') +
+                '<div style="font-size:13px; color:#ccc; white-space:pre-wrap; line-height:1.6;">' + (r.report_text || '—') + '</div>' +
+                '</div>'
+        }).join('')
+    } catch(e) { el.innerHTML = '<p style="color:#888;">Error loading reports.</p>' }
+}
+
+async function submitProgressReport() {
+    const errEl = document.getElementById('report-error')
+    const sucEl = document.getElementById('report-success')
+    errEl.style.display = 'none'; sucEl.style.display = 'none'
+
+    const report_text = document.getElementById('report-text').value
+    const report_type = document.getElementById('report-type').value
+    const fileInput   = document.getElementById('report-file')
+
+    if (!report_text.trim()) {
+        errEl.textContent = 'Please write your report content before submitting'
+        errEl.style.display = 'block'; return
+    }
+
+    let file_name = ''
+    if (fileInput.files.length) {
+        try {
+            document.getElementById('report-upload-progress').style.display = 'block'
+            file_name = await uploadToSupabase(fileInput.files[0], 'progress-reports')
+            document.getElementById('report-upload-progress').style.display = 'none'
+        } catch(e) {
+            document.getElementById('report-upload-progress').style.display = 'none'
+            errEl.textContent = 'File upload failed: ' + e.message
+            errEl.style.display = 'block'; return
+        }
+    }
+
+    try {
+        const wfRes = await fetch(API + '/workflow/my', { headers })
+        const wf    = await wfRes.json()
+        if (!wf || !wf.id) {
+            errEl.textContent = 'No active workflow found. Your coordinator needs to approve your application first.'
+            errEl.style.display = 'block'; return
+        }
+        const res = await fetch(API + '/workflow/' + wf.id + '/report', {
+            method: 'POST', headers,
+            body: JSON.stringify({ report_text: report_type.toUpperCase() + ' REPORT\n\n' + report_text, file_name })
+        })
+        if (res.ok) {
+            sucEl.textContent = 'Report submitted! Your coordinator will review it.'
+            sucEl.style.display = 'block'
+            document.getElementById('report-text').value = ''
+            fileInput.value = ''
+            await loadReportsTab()
+        } else {
+            const d = await res.json()
+            errEl.textContent = d.error || 'Failed to submit'
+            errEl.style.display = 'block'
+        }
+    } catch(e) {
+        errEl.textContent = 'Cannot connect to server.'
+        errEl.style.display = 'block'
+    }
+}
+
+loadOverview()
+</script>
+</body>
+</html>

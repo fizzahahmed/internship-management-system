@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register — Internship System</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .role-note {
+            font-size: 0.78rem;
+            color: #aaa;
+            margin-top: 4px;
+            padding: 6px 10px;
+            background: rgba(255,255,255,0.05);
+            border-left: 3px solid #ff6b00;
+            border-radius: 0 4px 4px 0;
+        }
+        .role-note.purple { border-left-color: #6c63ff; }
+    </style>
+</head>
+<body>
+<div class="auth-wrapper">
+    <div class="auth-box">
+        <h2>Create Account</h2>
+
+        <div class="alert alert-error"   id="error-msg"></div>
+        <div class="alert alert-success" id="success-msg"></div>
+
+        <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="name" placeholder="Enter your full name">
+        </div>
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="email" placeholder="Enter your email">
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="password" placeholder="Create a password">
+        </div>
+        <div class="form-group">
+            <label>Role</label>
+            <select id="role" onchange="toggleFields()">
+                <option value="">-- Select your role --</option>
+                <option value="student">Student</option>
+                <option value="employer">Employer</option>
+                <option value="coordinator">Department Coordinator</option>
+            </select>
+        </div>
+
+        <!-- ── Student fields ─────────────────────────────── -->
+        <div id="student-fields" style="display:none">
+            <div class="form-group">
+                <label>Department</label>
+                <select id="department">
+                    <option value="">-- Select your department --</option>
+                    <option value="Computer Science">Computer Science</option>
+                    <option value="Software Engineering">Software Engineering</option>
+                    <option value="Information Technology">Information Technology</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Required Credit Hours</label>
+                <input type="number" id="credit_hours" placeholder="e.g. 120" value="120">
+            </div>
+        </div>
+
+        <!-- ── Employer fields ────────────────────────────── -->
+        <div id="employer-fields" style="display:none">
+            <div class="role-note">
+                ℹ️ Only <strong>2 employer accounts</strong> are allowed — one per company.
+            </div>
+            <div class="form-group" style="margin-top:12px">
+                <label>Company</label>
+                <select id="company_name" onchange="setIndustry()">
+                    <option value="">-- Select your company --</option>
+                    <option value="TechNova Solutions">TechNova Solutions</option>
+                    <option value="DataBridge Corp">DataBridge Corp</option>
+                </select>
+                <div style="font-size:11px;color:#888;margin-top:4px;">Only these 2 companies are registered in the system.</div>
+            </div>
+            <div class="form-group">
+                <label>Industry</label>
+                <input type="text" id="industry" placeholder="e.g. Software, Finance">
+            </div>
+        </div>
+
+        <!-- ── Coordinator fields ─────────────────────────── -->
+        <div id="coordinator-fields" style="display:none">
+            <div class="role-note purple">
+                ℹ️ One coordinator per department. <strong>3 departments</strong> = max 3 coordinator accounts.
+            </div>
+            <div class="form-group" style="margin-top:12px">
+                <label>Your Department</label>
+                <select id="coord_department">
+                    <option value="">-- Select your department --</option>
+                    <option value="Computer Science">Computer Science</option>
+                    <option value="Software Engineering">Software Engineering</option>
+                    <option value="Information Technology">Information Technology</option>
+                </select>
+            </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="register()">Create Account</button>
+        <p>Already have an account? <a href="login.html">Sign in</a></p>
+    </div>
+</div>
+
+<script src="../js/auth.js"></script>
+<script>
+// Fixed company → industry map
+const COMPANY_INDUSTRY = {
+    'TechNova Solutions': 'Software & Technology',
+    'DataBridge Corp': 'Data Analytics & Finance'
+}
+
+function setIndustry() {
+    const company = document.getElementById('company_name').value
+    document.getElementById('industry').value = COMPANY_INDUSTRY[company] || ''
+}
+
+function toggleFields() {
+    const role = document.getElementById('role').value
+    document.getElementById('student-fields').style.display     = role === 'student'     ? 'block' : 'none'
+    document.getElementById('employer-fields').style.display    = role === 'employer'    ? 'block' : 'none'
+    document.getElementById('coordinator-fields').style.display = role === 'coordinator' ? 'block' : 'none'
+}
+
+function showError(msg) {
+    const el = document.getElementById('error-msg')
+    el.textContent = msg
+    el.style.display = 'block'
+    document.getElementById('success-msg').style.display = 'none'
+}
+
+async function register() {
+    const name     = document.getElementById('name').value.trim()
+    const email    = document.getElementById('email').value.trim()
+    const password = document.getElementById('password').value
+    const role     = document.getElementById('role').value
+
+    const emailRegex = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/
+if (!emailRegex.test(email)) {
+    return showError('Invalid email format. Please enter a valid email (e.g. name@example.com)')
+}
+
+    const body = { name, email, password, role }
+
+    if (role === 'student') {
+        const dept = document.getElementById('department').value
+        if (!dept) return showError('Please select your department')
+        body.department   = dept
+        body.credit_hours = parseInt(document.getElementById('credit_hours').value) || 120
+    }
+
+    if (role === 'employer') {
+        const company = document.getElementById('company_name').value
+        if (!company) return showError('Please select your company')
+        body.company_name = company
+        body.industry     = document.getElementById('industry').value.trim()
+    }
+
+    if (role === 'coordinator') {
+        const dept = document.getElementById('coord_department').value
+        if (!dept) return showError('Please select your department')
+        body.department = dept
+    }
+
+    try {
+        const res  = await fetch('http://127.0.0.1:5000/api/auth/register', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(body)
+        })
+        const data = await res.json()
+        if (!res.ok) {
+            return showError(data.error || 'Registration failed')
+        }
+        document.getElementById('success-msg').textContent = 'Account created! Redirecting to login...'
+        document.getElementById('success-msg').style.display = 'block'
+        document.getElementById('error-msg').style.display   = 'none'
+        setTimeout(() => { window.location.href = 'login.html' }, 1500)
+    } catch (err) {
+        showError('Cannot connect to server. Make sure Flask is running.')
+    }
+}
+</script>
+</body>
+</html>

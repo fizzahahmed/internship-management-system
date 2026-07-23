@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coordinator — IMS</title>
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        :root{
+            --bg:#0a0a0f;--surface:#13131a;--surface2:#1c1c28;--border:#2a2a3a;
+            --accent:#6c63ff;--accent2:#a78bfa;--green:#22c55e;--red:#ef4444;
+            --yellow:#f59e0b;--text:#e2e2f0;--muted:#6b6b8a;
+        }
+        body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+        nav{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:50}
+        .nav-brand{font-size:16px;font-weight:700;color:var(--accent2)}
+        .btn-logout{background:transparent;border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:13px}
+        .btn-logout:hover{border-color:var(--red);color:var(--red)}
+        .layout{display:flex;min-height:calc(100vh - 53px)}
+        .sidebar{width:210px;background:var(--surface);border-right:1px solid var(--border);padding:16px 0;flex-shrink:0;position:sticky;top:53px;height:calc(100vh - 53px);overflow-y:auto}
+        .sb-section{padding:8px 16px 4px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:8px}
+        .sb-item{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;font-size:13px;color:var(--muted);transition:all .15s;border-left:3px solid transparent}
+        .sb-item:hover{background:var(--surface2);color:var(--text)}
+        .sb-item.active{background:var(--surface2);color:var(--accent2);border-left-color:var(--accent)}
+        .sb-icon{font-size:15px;width:20px;text-align:center}
+        .main{flex:1;padding:28px;overflow-y:auto}
+        .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:24px}
+        .stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px}
+        .stat-num{font-size:30px;font-weight:800;color:var(--accent2);line-height:1}
+        .stat-label{font-size:11px;color:var(--muted);margin-top:6px;text-transform:uppercase;letter-spacing:.5px}
+        .section{display:none}.section.active{display:block}
+        .section-title{font-size:18px;font-weight:700;margin-bottom:6px;color:var(--accent2)}
+        .section-sub{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.5}
+        .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px;margin-bottom:18px}
+        .card-title{font-size:14px;font-weight:700;margin-bottom:14px}
+        .table-wrap{overflow-x:auto}
+        table{width:100%;border-collapse:collapse;font-size:13px}
+        th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;padding:10px 12px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+        td{padding:11px 12px;border-bottom:1px solid #1a1a24}
+        tr:last-child td{border-bottom:none}
+        tr:hover td{background:var(--surface2)}
+        .badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+        .b-pending{background:#3d2e00;color:var(--yellow)}
+        .b-approved,.b-completed,.b-done{background:#052e16;color:var(--green)}
+        .b-rejected{background:#2d0a0a;color:var(--red)}
+        .b-progress{background:#1e1b4b;color:var(--accent2)}
+        .b-waiting{background:#1a1a2e;color:#888}
+        .btn{padding:7px 14px;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;transition:opacity .2s}
+        .btn:hover{opacity:.85}
+        .btn-primary{background:var(--accent);color:white}
+        .btn-green{background:var(--green);color:white}
+        .btn-red{background:var(--red);color:white}
+        .btn-outline{background:transparent;border:1px solid var(--accent);color:var(--accent2)}
+        .btn-sm{padding:4px 10px;font-size:11px}
+        .form-group{margin-bottom:14px}
+        .form-group label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+        .form-group input,.form-group select,.form-group textarea{width:100%;padding:9px 13px;background:#0e0e16;border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;transition:border .2s}
+        .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--accent)}
+        option{background:var(--surface2)}
+        .pipeline{display:flex;align-items:flex-start;gap:0;margin:20px 0;overflow-x:auto;padding-bottom:8px}
+        .pipe-step{display:flex;flex-direction:column;align-items:center;min-width:90px;position:relative}
+        .pipe-step:not(:last-child)::after{content:'';position:absolute;top:18px;left:50%;width:100%;height:2px;background:var(--border);z-index:0}
+        .pipe-step.done::after{background:var(--green)}
+        .pipe-step.active::after{background:var(--accent)}
+        .pipe-circle{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:2px solid var(--border);background:var(--bg);z-index:1;position:relative}
+        .pipe-step.done .pipe-circle{background:var(--green);border-color:var(--green);color:white}
+        .pipe-step.active .pipe-circle{background:var(--accent);border-color:var(--accent);color:white;box-shadow:0 0 12px #6c63ff66}
+        .pipe-step.waiting .pipe-circle{color:var(--muted)}
+        .pipe-label{font-size:10px;color:var(--muted);margin-top:6px;text-align:center;line-height:1.3;max-width:80px}
+        .pipe-step.done .pipe-label{color:var(--green)}
+        .pipe-step.active .pipe-label{color:var(--accent2)}
+        .wf-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:14px}
+        .wf-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+        .wf-name{font-size:15px;font-weight:700}
+        .wf-meta{font-size:12px;color:var(--muted);margin-top:3px}
+        .stage-panel{background:#0e0e18;border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:12px}
+        .stage-panel-title{font-size:12px;font-weight:700;color:var(--accent2);margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px}
+        .report-box{background:#0e0e18;border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px}
+        .report-text{font-size:13px;color:#ccc;white-space:pre-wrap;line-height:1.6}
+        .avatar-sm{width:30px;height:30px;border-radius:8px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;flex-shrink:0}
+        .student-row{display:flex;align-items:center;gap:8px}
+    </style>
+</head>
+<body>
+<nav>
+    <div class="nav-brand">⬡ IMS — Coordinator</div>
+    <div style="display:flex;align-items:center;gap:14px;">
+        <span style="color:var(--muted);font-size:13px;" id="welcome-msg"></span>
+        <span id="coord-dept-badge" style="display:none;background:#6c63ff22;color:#a78bfa;border:1px solid #6c63ff55;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:600;"></span>
+        <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+</nav>
+
+<div class="layout">
+<div class="sidebar">
+    <div class="sb-section">Overview</div>
+    <div class="sb-item active" id="sb-overview" onclick="showSection('overview',this)"><span class="sb-icon">📊</span> Dashboard</div>
+    <div class="sb-section">Workflow Management</div>
+    <div class="sb-item" id="sb-dept-approval" onclick="showSection('dept-approval',this)"><span class="sb-icon">📋</span> Dept Approval</div>
+    <div class="sb-item" id="sb-workflows" onclick="showSection('workflows',this)"><span class="sb-icon">🔄</span> All Workflows</div>
+    <div class="sb-item" id="sb-internship-progress" onclick="showSection('internship-progress',this)"><span class="sb-icon">📝</span> Internship Progress</div>
+    <div class="sb-section">Academic</div>
+    <div class="sb-item" id="sb-students" onclick="showSection('students',this)"><span class="sb-icon">🎓</span> Students</div>
+    <div class="sb-item" id="sb-viva-monitor" onclick="showSection('viva-monitor',this)"><span class="sb-icon">📋</span> Viva Monitor</div>
+    <div class="sb-item" id="sb-credit" onclick="showSection('credit',this)"><span class="sb-icon">✅</span> Credit Hours</div>
+</div>
+
+<div class="main">
+
+<!-- OVERVIEW -->
+<div class="section active" id="sec-overview">
+    <div class="section-title">Dashboard Overview</div>
+    <div class="section-sub">Monitor all internship activity across the department.</div>
+    <div class="stats">
+        <div class="stat"><div class="stat-num" id="st-pending-approval">—</div><div class="stat-label">Pending Approvals</div></div>
+        <div class="stat"><div class="stat-num" id="st-workflows">—</div><div class="stat-label">Active Workflows</div></div>
+    </div>
+    <div id="overview-workflow-container">
+        <div class="card"><p style="color:var(--muted);text-align:center;padding:20px;">Loading...</p></div>
+    </div>
+    <div class="card" id="overview-wf-card" style="display:none;">
+        <div class="card-title">Active Workflows</div>
+        <div class="table-wrap"><table>
+            <thead><tr><th>Student</th><th>Department</th><th>Company</th><th>Stage</th><th>Status</th><th></th></tr></thead>
+            <tbody id="overview-wf-tbl"></tbody>
+        </table></div>
+    </div>
+</div>
+
+<!-- DEPT APPROVAL -->
+<div class="section" id="sec-dept-approval">
+    <div class="section-title">Step 1 — Department Approval</div>
+    <div class="section-sub">When a student applies for an internship and the employer accepts, <strong>you review it first</strong>. Only after your approval does the full workflow begin.</div>
+    <div class="card">
+        <div class="card-title">Applications Awaiting Department Review</div>
+        <div id="dept-approval-list"><p style="color:var(--muted);">Loading...</p></div>
+    </div>
+</div>
+
+<!-- ALL WORKFLOWS -->
+<div class="section" id="sec-workflows">
+    <div class="section-title">Department Workflow Pipeline</div>
+    <div class="section-sub">
+        Application → Dept Approval → Credit Verification → Viva → Internship Progress → Employer Evaluation
+    </div>
+    <div id="workflows-list"><p style="color:var(--muted);">Loading...</p></div>
+</div>
+
+<!-- INTERNSHIP PROGRESS -->
+<div class="section" id="sec-internship-progress">
+    <div class="section-title">Step 5 — Internship Progress</div>
+    <div class="section-sub">Monitor reports and student internship activity.</div>
+    <div id="reports-list"><p style="color:var(--muted);">Loading...</p></div>
+</div>
+
+<!-- STUDENTS -->
+<div class="section" id="sec-students">
+    <div class="section-title">All Students</div>
+    <div class="section-sub">Full list of registered students with their internship status.</div>
+    <div class="card">
+        <div class="table-wrap"><table>
+            <thead><tr><th>Student</th><th>Email</th><th>Department</th><th>Req. Hours</th><th>Internship</th><th>Workflow</th></tr></thead>
+            <tbody id="students-tbl"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">Loading...</td></tr></tbody>
+        </table></div>
+    </div>
+</div>
+
+<!-- VIVA MONITOR -->
+<div class="section" id="sec-viva-monitor">
+    <div class="section-title">Step 4 — Viva Assessment Monitor</div>
+    <div class="section-sub">Vivas are scheduled and graded by the employer. Confirm the viva stage once marks are recorded.</div>
+    <div class="card">
+        <div class="table-wrap"><table>
+            <thead><tr><th>Student</th><th>Date</th><th>Type</th><th>Company</th><th>Submitted?</th><th>Marks</th><th>Workflow Action</th></tr></thead>
+            <tbody id="viva-tbl"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">Loading...</td></tr></tbody>
+        </table></div>
+    </div>
+</div>
+
+<!-- CREDIT HOURS -->
+<div class="section" id="sec-credit">
+    <div class="section-title">Step 3 — Credit Hour Verification</div>
+    <div class="section-sub">Verify that the student completed the required internship hours.</div>
+    <div id="credit-list"><p style="color:var(--muted);">Loading...</p></div>
+    <div class="card">
+        <div class="card-title">Already Verified</div>
+        <div class="table-wrap"><table>
+            <thead><tr><th>Student</th><th>Department</th><th>Required</th><th>Completed</th><th>Status</th><th>Date</th></tr></thead>
+            <tbody id="credit-verified-tbl"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">Loading...</td></tr></tbody>
+        </table></div>
+    </div>
+</div>
+
+</div>
+</div>
+
+<script>
+const API            = 'http://127.0.0.1:5000/api'
+const SUPABASE_URL   = 'https://lwrlutrxhylxqukwzvrd.supabase.co'
+const SUPABASE_ANON  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3cmx1dHJ4aHlseHF1a3d6dnJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MDg3ODUsImV4cCI6MjA5NTE4NDc4NX0.B8wkDEHDrjSaGKz1W7Ee9mcrAJJ9GnjOcxCzrNBQ_68'
+const STORAGE_BUCKET = 'internship-files'
+
+const token = localStorage.getItem('token')
+const H     = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }
+
+if (!token) window.location.href = 'login.html'
+const coordName = localStorage.getItem('name') || 'Coordinator'
+const coordDept = localStorage.getItem('department') || ''
+document.getElementById('welcome-msg').textContent = coordName
+if (coordDept) {
+    document.getElementById('coord-dept-badge').textContent    = coordDept
+    document.getElementById('coord-dept-badge').style.display = 'inline-block'
+}
+function logout() { localStorage.clear(); window.location.href = 'login.html' }
+
+function showSection(name, el) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'))
+    document.querySelectorAll('.sb-item').forEach(s => s.classList.remove('active'))
+    const secEl = document.getElementById('sec-' + name)
+    if (secEl) secEl.classList.add('active')
+    if (el) el.classList.add('active')
+    const loaders = {
+        'overview':            loadOverview,
+        'dept-approval':       loadDeptApproval,
+        'workflows':           loadWorkflows,
+        'internship-progress': loadProgressReports,
+        'students':            loadStudents,
+        'viva-monitor':        loadVivaMonitor,
+        'credit':              loadCredit
+    }
+    if (loaders[name]) loaders[name]()
+}
+
+function initials(name) {
+    if (!name) return '?'
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2)
+}
+
+// ── PIPELINE ORDER: Application → Dept Approval → Credit Verification → Viva → Internship Progress → Employer Evaluation
+// placement_setup is skipped from display (still exists in backend, handled transparently)
+const STAGE_LABELS = {
+    application_submitted: 'Application',
+    department_approval:   'Dept Approval',
+    credit_verification:   'Credit Verification',
+    viva_assessment:       'Viva',
+    internship_progress:   'Internship Progress',
+    employer_evaluation:   'Employer Evaluation'
+}
+const STAGE_KEYS = Object.keys(STAGE_LABELS)
+
+function stageIcon(key, wf) {
+    if (wf[key]) return 'done'
+    if (wf.current_stage === key) return 'active'
+    return 'waiting'
+}
+
+function buildPipeline(wf) {
+    return '<div class="pipeline">' + STAGE_KEYS.map((key, i) => {
+        const state = stageIcon(key, wf)
+        const num   = wf[key] ? '✓' : (i + 1)
+        return '<div class="pipe-step ' + state + '">' +
+            '<div class="pipe-circle">' + num + '</div>' +
+            '<div class="pipe-label">' + STAGE_LABELS[key] + '</div>' +
+            '</div>'
+    }).join('') + '</div>'
+}
+
+function stageBadge(stage) {
+    return '<span class="badge b-progress">' + (STAGE_LABELS[stage] || stage) + '</span>'
+}
+
+// ── OVERVIEW ─────────────────────────────────────────────────
+async function loadOverview() {
+    try {
+        const [sr, wr, ar] = await Promise.all([
+            fetch(API+'/students/',                  {headers:H}).then(r=>r.json()),
+            fetch(API+'/workflow/',                  {headers:H}).then(r=>r.json()),
+            fetch(API+'/applications/pending-dept',  {headers:H}).then(r=>r.json())
+        ])
+        const workflows = Array.isArray(wr) ? wr : []
+        const pending   = Array.isArray(ar) ? ar : []
+
+        document.getElementById('st-workflows').textContent        = workflows.filter(w => w.status === 'in_progress').length
+        document.getElementById('st-pending-approval').textContent = pending.length
+
+        const container = document.getElementById('overview-workflow-container')
+        const wfCard    = document.getElementById('overview-wf-card')
+
+        if (!workflows.length) {
+            container.innerHTML = '<div class="card"><p style="color:var(--muted);text-align:center;padding:20px;">No active workflows yet.</p>' +
+                '<button class="btn btn-primary" style="margin-top:14px;" onclick="showSection(\'dept-approval\', document.getElementById(\'sb-dept-approval\'))">Go to Dept Approval</button></div>'
+            wfCard.style.display = 'none'
+            return
+        }
+        container.innerHTML = ''
+        wfCard.style.display = 'block'
+        document.getElementById('overview-wf-tbl').innerHTML = workflows.map(w => {
+            const name = w.students?.users?.name || 'N/A'
+            return '<tr>' +
+                '<td><div class="student-row"><div class="avatar-sm">' + initials(name) + '</div><span style="font-weight:600;">' + name + '</span></div></td>' +
+                '<td style="color:var(--muted);">' + (w.students?.department || 'N/A') + '</td>' +
+                '<td>' + (w.internships?.employers?.company_name || '—') + '</td>' +
+                '<td>' + stageBadge(w.current_stage) + '</td>' +
+                '<td><span class="badge ' + (w.status==='completed'?'b-completed':w.status==='rejected'?'b-rejected':'b-progress') + '">' + w.status + '</span></td>' +
+                '<td><button class="btn btn-outline btn-sm" onclick="showSection(\'workflows\', document.getElementById(\'sb-workflows\'))">Open</button></td>' +
+                '</tr>'
+        }).join('')
+    } catch(e) { console.error('loadOverview error:', e) }
+}
+
+// ── DEPT APPROVAL ─────────────────────────────────────────────
+async function loadDeptApproval() {
+    const el = document.getElementById('dept-approval-list')
+    el.innerHTML = '<p style="color:var(--muted);">Loading...</p>'
+    try {
+        const res     = await fetch(API+'/applications/pending-dept', {headers:H})
+        const pending = await res.json()
+        if (!Array.isArray(pending) || !pending.length) {
+            el.innerHTML = '<div class="card"><p style="color:var(--muted);text-align:center;padding:20px;">No applications pending department approval right now.</p></div>'
+            return
+        }
+        el.innerHTML = pending.map(a => {
+            const name     = a.students?.users?.name || 'N/A'
+            const company  = a.internship_listings?.employers?.company_name || 'N/A'
+            const dept     = a.students?.department || 'N/A'
+            const position = a.internship_listings?.title || 'N/A'
+            const cl       = a.cover_letter || ''
+            const isUrl    = cl.startsWith('http')
+            const isFile   = cl.startsWith('[Attached file:')
+            let coverHtml  = ''
+            if (isUrl) {
+                coverHtml = '<a href="' + cl + '" target="_blank" style="color:var(--accent2);font-size:13px;font-weight:600;text-decoration:none;">📎 Open Cover Letter</a>'
+            } else if (isFile) {
+                const fname = cl.replace('[Attached file: ','').replace(']','')
+                coverHtml = '<button onclick="openStorageFile(\'cover-letters\',\'' + fname.replace(/'/g,"\\'") + '\')" style="background:transparent;border:1px solid #6c63ff;color:#a78bfa;padding:5px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;">📎 ' + fname + ' — Open</button>'
+            } else {
+                coverHtml = '<div style="font-size:13px;color:#ccc;">' + (cl || '—') + '</div>'
+            }
+            return '<div class="wf-card">' +
+                '<div class="wf-header"><div>' +
+                '<div class="wf-name">' + name + '</div>' +
+                '<div class="wf-meta">' + dept + ' · Applying to: <strong style="color:var(--text);">' + position + '</strong> at <strong style="color:var(--accent2);">' + company + '</strong></div>' +
+                '</div><span class="badge b-pending">Awaiting Dept Approval</span></div>' +
+                '<div style="background:#0e0e18;border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;">' +
+                '<div style="font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;">Cover Letter</div>' +
+                coverHtml + '</div>' +
+                '<div style="margin-bottom:12px;">' +
+                '<label style="font-size:11px;color:var(--muted);display:block;margin-bottom:6px;text-transform:uppercase;">Comments (optional)</label>' +
+                '<input type="text" id="dept-comment-' + a.id + '" placeholder="Any notes for approval/rejection..." style="width:100%;padding:8px 12px;background:#0e0e16;border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;">' +
+                '</div>' +
+                '<div style="display:flex;gap:10px;">' +
+                '<button class="btn btn-green" onclick="deptDecide(' + a.id + ', true)">✓ Approve & Start Workflow</button>' +
+                '<button class="btn btn-red" onclick="deptDecide(' + a.id + ', false)">✗ Reject Application</button>' +
+                '</div></div>'
+        }).join('')
+    } catch(e) {
+        console.error('loadDeptApproval error:', e)
+        el.innerHTML = '<p style="color:var(--red);">Error loading applications</p>'
+    }
+}
+
+// Open a file from Supabase Storage by folder + filename
+function openStorageFile(folder, fileName) {
+    const url = SUPABASE_URL + '/storage/v1/object/public/' + STORAGE_BUCKET + '/' + folder + '/' + fileName
+    window.open(url, '_blank')
+}
+
+async function deptDecide(appId, approved) {
+    const comments = document.getElementById('dept-comment-' + appId)?.value || ''
+    try {
+        const res = await fetch(API+'/applications/'+appId+'/dept-approve', {
+            method: 'PUT', headers: H,
+            body: JSON.stringify({ approved, comments })
+        })
+        if (!res.ok) {
+            const d = await res.json()
+            alert('Error: ' + (d.error || d.message || 'Request failed'))
+            return
+        }
+        await loadDeptApproval()
+        await loadOverview()
+    } catch(e) {
+        alert('Network error. Make sure Flask is running.')
+    }
+}
+
+// ── ALL WORKFLOWS ─────────────────────────────────────────────
+async function loadWorkflows() {
+    const el = document.getElementById('workflows-list')
+    el.innerHTML = '<p style="color:var(--muted);">Loading...</p>'
+    try {
+        const [wr, er, ir] = await Promise.all([
+            fetch(API+'/workflow/',    {headers:H}).then(r=>r.json()),
+            fetch(API+'/evaluations/', {headers:H}).then(r=>r.json()),
+            fetch(API+'/internships/', {headers:H}).then(r=>r.json())
+        ])
+        const workflows = Array.isArray(wr) ? wr : []
+        const evals     = Array.isArray(er) ? er : []
+        const interns   = Array.isArray(ir) ? ir : []
+
+        if (!workflows.length) {
+            el.innerHTML = '<div class="card"><p style="color:var(--muted);text-align:center;padding:20px;">No workflows yet. Approve applications in "Dept Approval" to start workflows.</p></div>'
+            return
+        }
+
+        // Build a set of student_ids that have an evaluation submitted
+        // evaluations link via internship_id → find the student_id through internships
+        const evaluatedStudentIds = new Set()
+        evals.forEach(ev => {
+            const intern = interns.find(i => i.id == ev.internship_id)
+            if (intern) evaluatedStudentIds.add(intern.student_id)
+        })
+
+        el.innerHTML = workflows.map(w => {
+            const name       = w.students?.users?.name || 'N/A'
+            const dept       = w.students?.department || 'N/A'
+            const company    = w.internships?.employers?.company_name || '—'
+            const isDone     = w.status === 'completed'
+            const isRejected = w.status === 'rejected'
+
+            // Inject employer_evaluation = true if an eval exists for this student
+            // This overrides the DB boolean which stays false until manually advanced
+            const enrichedW = Object.assign({}, w, {
+                employer_evaluation: w.employer_evaluation || evaluatedStudentIds.has(w.student_id)
+            })
+
+            return '<div class="wf-card">' +
+                '<div class="wf-header"><div>' +
+                '<div class="wf-name">' + name + '</div>' +
+                '<div class="wf-meta">' + dept + ' · ' + company + '</div>' +
+                '</div><div style="display:flex;gap:8px;align-items:center;">' +
+                stageBadge(w.current_stage) +
+                '<span class="badge ' + (isDone?'b-completed':isRejected?'b-rejected':'b-progress') + '">' + w.status + '</span>' +
+                '</div></div>' +
+                buildPipeline(enrichedW) +
+                (w.comments ? '<div style="font-size:12px;color:var(--muted);margin-bottom:10px;">💬 ' + w.comments + '</div>' : '') +
+                (!isDone && !isRejected ? buildStageAction(w) : '') +
+                '</div>'
+        }).join('')
+    } catch(e) { console.error('loadWorkflows error:', e) }
+}
+
+function buildStageAction(w) {
+    const stage = w.current_stage
+    const wid   = w.id
+
+    // placement_setup is hidden from coordinators — auto-advance it immediately
+    if (stage === 'placement_setup') {
+        // Fire silently and return empty string so nothing renders
+        fetch(API+'/workflow/'+wid+'/advance', {
+            method: 'PUT', headers: H,
+            body: JSON.stringify({ stage: 'placement_setup', comments: 'Auto-advanced past placement setup.' })
+        }).then(() => loadWorkflows())
+        return '<div class="stage-panel"><p style="font-size:13px;color:var(--muted);">⏳ Advancing workflow...</p></div>'
+    }
+
+    let html = '<div class="stage-panel">'
+    html += '<div class="stage-panel-title">Next Action: ' + (STAGE_LABELS[stage] || stage) + '</div>'
+
+    if (stage === 'credit_verification') {
+        html += '<p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Go to Credit Hours tab to verify the student completed the required hours.</p>'
+        html += quickAdvance(wid, 'credit_verification', '✓ Credit Hours Verified')
+    } else if (stage === 'viva_assessment') {
+        html += '<p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Check the Viva Monitor tab to confirm the student has been graded.</p>'
+        html += quickAdvance(wid, 'viva_assessment', '✓ Viva Completed & Marked')
+    } else if (stage === 'internship_progress') {
+        html += '<p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Review progress reports submitted by the student.</p>'
+        html += quickAdvance(wid, 'internship_progress', '✓ Internship Progress Verified')
+    } else if (stage === 'employer_evaluation') {
+        html += '<p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Wait for the employer to submit the student\'s performance evaluation.</p>'
+        html += quickAdvance(wid, 'employer_evaluation', '✓ Employer Evaluation Received')
+    } else if (stage === 'completed') {
+        html += '<p style="font-size:13px;color:var(--green);">All stages complete.</p>'
+    }
+
+    html += '<div style="margin-top:10px;"><input type="text" id="wf-comment-' + wid + '" placeholder="Optional comment..." style="width:100%;background:#0a0a14;border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-size:12px;outline:none;"></div>'
+    html += '<div style="margin-top:8px;"><button class="btn btn-red btn-sm" onclick="rejectWf(' + wid + ')">✗ Reject / Stop Workflow</button></div>'
+    html += '</div>'
+    return html
+}
+
+function quickAdvance(wid, stage, label) {
+    return '<button class="btn btn-green btn-sm" onclick="advanceStage(' + wid + ',\'' + stage + '\')">' + label + '</button>'
+}
+
+async function advanceStage(wid, stage) {
+    const comments = document.getElementById('wf-comment-' + wid)?.value || ''
+    const res = await fetch(API+'/workflow/'+wid+'/advance', {
+        method: 'PUT', headers: H,
+        body: JSON.stringify({ stage, comments })
+    })
+    if (!res.ok) {
+        const d = await res.json()
+        alert('Error: ' + (d.error || 'Could not advance stage'))
+        return
+    }
+    loadWorkflows(); loadOverview()
+}
+
+async function rejectWf(wid) {
+    const comments = document.getElementById('wf-comment-' + wid)?.value || prompt('Reason for rejection:') || 'Rejected by coordinator'
+    await fetch(API+'/workflow/'+wid+'/reject', {
+        method: 'PUT', headers: H,
+        body: JSON.stringify({ comments })
+    })
+    loadWorkflows(); loadOverview()
+}
+
+// ── PROGRESS REPORTS ──────────────────────────────────────────
+async function loadProgressReports() {
+    const el = document.getElementById('reports-list')
+    el.innerHTML = '<p style="color:var(--muted);">Loading...</p>'
+    try {
+        const wr        = await fetch(API+'/workflow/', {headers:H}).then(r=>r.json())
+        const workflows = Array.isArray(wr) ? wr : []
+        if (!workflows.length) {
+            el.innerHTML = '<div class="card"><p style="color:var(--muted);text-align:center;padding:20px;">No active workflows.</p></div>'
+            return
+        }
+        let html = ''
+        for (const w of workflows) {
+            const rr      = await fetch(API+'/workflow/'+w.id+'/reports', {headers:H}).then(r=>r.json())
+            const reports = Array.isArray(rr) ? rr : []
+            const name    = w.students?.users?.name || 'N/A'
+            html += '<div class="card">'
+            html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">'
+            html += '<div class="card-title" style="margin:0;">' + name + '</div>'
+            html += '<span class="badge ' + (w.internship_progress ? 'b-completed' : 'b-pending') + '">' + (w.internship_progress ? 'Stage Complete' : 'Awaiting Reports') + '</span>'
+            html += '</div>'
+            if (!reports.length) {
+                html += '<p style="color:var(--muted);font-size:13px;">No reports submitted yet by this student.</p>'
+            } else {
+                html += reports.map(r => {
+                    const isUrl    = r.file_name && r.file_name.startsWith('http')
+                    const dispName = isUrl ? decodeURIComponent(r.file_name.split('/').pop().replace(/^\d+_/, '')) : r.file_name
+                    return '<div class="report-box">' +
+                        '<div style="display:flex;justify-content:space-between;margin-bottom:8px;">' +
+                        '<span style="font-size:12px;color:var(--muted);">' + (r.submitted_at ? r.submitted_at.split('T')[0] : 'N/A') + '</span>' +
+                        (r.file_name ? (isUrl
+                            ? '<a href="' + r.file_name + '" target="_blank" style="color:var(--accent2);font-size:12px;text-decoration:none;">📎 ' + dispName + '</a>'
+                            : '<span style="color:var(--accent2);font-size:12px;">📎 ' + dispName + '</span>')
+                        : '') +
+                        '<span class="badge ' + (r.approved ? 'b-approved' : 'b-pending') + '">' + (r.approved ? 'Approved' : 'Pending') + '</span>' +
+                        '</div>' +
+                        '<div class="report-text">' + (r.report_text || '—') + '</div>' +
+                        (!r.approved ? '<button class="btn btn-green btn-sm" style="margin-top:10px;" onclick="approveReport(' + w.id + ',' + r.id + ')">✓ Approve Report</button>' : '') +
+                        '</div>'
+                }).join('')
+            }
+            html += '</div>'
+        }
+        el.innerHTML = html || '<div class="card"><p style="color:var(--muted);">No reports yet.</p></div>'
+    } catch(e) { console.error('loadProgressReports error:', e) }
+}
+
+async function approveReport(wid, rid) {
+    await fetch(API+'/workflow/'+wid+'/approve-report/'+rid, { method:'PUT', headers:H })
+    loadProgressReports()
+}
+
+// ── STUDENTS ─────────────────────────────────────────────────
+async function loadStudents() {
+    try {
+        const [sr, ir, wr] = await Promise.all([
+            fetch(API+'/students/',    {headers:H}).then(r=>r.json()),
+            fetch(API+'/internships/', {headers:H}).then(r=>r.json()),
+            fetch(API+'/workflow/',    {headers:H}).then(r=>r.json())
+        ])
+        const students  = Array.isArray(sr) ? sr : []
+        const interns   = Array.isArray(ir) ? ir : []
+        const workflows = Array.isArray(wr) ? wr : []
+        const tbl = document.getElementById('students-tbl')
+        if (!students.length) {
+            tbl.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">No students in your department</td></tr>'
+            return
+        }
+        tbl.innerHTML = students.map(s => {
+            const intern = interns.find(i => i.student_id == s.id)
+            const wf     = workflows.find(w => w.student_id == s.id)
+            return '<tr>' +
+                '<td><div class="student-row"><div class="avatar-sm">' + initials(s.users?.name) + '</div><span style="font-weight:600;">' + (s.users?.name||'N/A') + '</span></div></td>' +
+                '<td style="color:var(--muted);">' + (s.users?.email||'N/A') + '</td>' +
+                '<td>' + (s.department||'N/A') + '</td>' +
+                '<td>' + (s.credit_hours||0) + ' hrs</td>' +
+                '<td>' + (intern ? '<span class="badge b-progress">' + (intern.employers?.company_name||intern.status) + '</span>' : '<span style="color:var(--muted);">None</span>') + '</td>' +
+                '<td>' + (wf ? stageBadge(wf.current_stage) : '<span style="color:var(--muted);">No workflow</span>') + '</td>' +
+                '</tr>'
+        }).join('')
+    } catch(e) { console.error('loadStudents error:', e) }
+}
+
+// ── VIVA MONITOR ─────────────────────────────────────────────
+async function loadVivaMonitor() {
+    try {
+        const [vr, ir, wr] = await Promise.all([
+            fetch(API+'/viva/',        {headers:H}).then(r=>r.json()),
+            fetch(API+'/internships/', {headers:H}).then(r=>r.json()),
+            fetch(API+'/workflow/',    {headers:H}).then(r=>r.json())
+        ])
+        const vivas     = Array.isArray(vr) ? vr : []
+        const interns   = Array.isArray(ir) ? ir : []
+        const workflows = Array.isArray(wr) ? wr : []
+        const empMap    = {}
+        interns.forEach(i => { if (i.student_id) empMap[i.student_id] = i.employers?.company_name || '—' })
+
+        const tbl = document.getElementById('viva-tbl')
+        if (!vivas.length) {
+            tbl.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">No vivas scheduled yet.</td></tr>'
+            return
+        }
+        const subChecks = await Promise.all(vivas.map(v =>
+            fetch(API+'/viva/'+v.id+'/submissions', {headers:H}).then(r=>r.json()).catch(()=>[])
+        ))
+        tbl.innerHTML = vivas.map((v, idx) => {
+            const subs                 = Array.isArray(subChecks[idx]) ? subChecks[idx] : []
+            const submitted            = subs.length > 0
+            const graded               = v.marks !== null && v.marks !== undefined
+            const wf                   = workflows.find(w => w.student_id == v.student_id)
+            const vivaStageAlreadyDone = wf && wf.viva_assessment
+            const actionHtml = (graded && wf && !vivaStageAlreadyDone)
+                ? '<button class="btn btn-green btn-sm" onclick="markVivaStage(' + wf.id + ')">✓ Confirm in Workflow</button>'
+                : (vivaStageAlreadyDone
+                    ? '<span style="color:var(--green);font-size:12px;">✓ Done</span>'
+                    : '<span style="color:var(--muted);font-size:12px;">Awaiting grade</span>')
+            // Show submitted file link if available
+            const sub     = subs[0]
+            const fileUrl = sub?.file_url
+            const subInfo = fileUrl && fileUrl.startsWith('http')
+                ? ' · <a href="' + fileUrl + '" target="_blank" style="color:var(--accent2);font-size:11px;">📎 View File</a>'
+                : ''
+            return '<tr>' +
+                '<td style="font-weight:600;">' + (v.students?.users?.name||'N/A') + '</td>' +
+                '<td>' + (v.date||'—') + '</td>' +
+                '<td><span class="badge b-progress">' + (v.assessment_type||'written') + '</span></td>' +
+                '<td>' + (empMap[v.student_id]||'—') + '</td>' +
+                '<td>' + (submitted ? '<span style="color:var(--green);">✓ Submitted</span>' + subInfo : '<span style="color:var(--yellow);">⏳ Pending</span>') + '</td>' +
+                '<td style="font-weight:700;color:var(--accent2);">' + (graded ? v.marks+'/100' : '—') + '</td>' +
+                '<td>' + actionHtml + '</td>' +
+                '</tr>'
+        }).join('')
+    } catch(e) { console.error('loadVivaMonitor error:', e) }
+}
+
+async function markVivaStage(wid) {
+    await fetch(API+'/workflow/'+wid+'/advance', {
+        method:'PUT', headers:H,
+        body: JSON.stringify({ stage:'viva_assessment', comments:'Viva completed and graded by employer.' })
+    })
+    loadVivaMonitor()
+}
+
+// ── CREDIT HOURS ─────────────────────────────────────────────
+async function loadCredit() {
+    try {
+        const [cr, ir, wr] = await Promise.all([
+            fetch(API+'/credit/',        {headers:H}).then(r=>r.json()),
+            fetch(API+'/internships/',   {headers:H}).then(r=>r.json()),
+            fetch(API+'/credit/pending', {headers:H}).then(r=>r.json())
+        ])
+        const all     = Array.isArray(cr) ? cr : []
+        const pending = Array.isArray(wr) ? wr : []
+        const el      = document.getElementById('credit-list')
+
+        if (!pending.length) {
+            el.innerHTML = '<div class="card"><p style="color:var(--muted);text-align:center;padding:20px;">No students pending credit verification.</p></div>'
+        } else {
+            el.innerHTML = '<div class="card"><div class="card-title">Pending Credit Verification</div>' +
+                pending.map(i => {
+                    const name = i.students?.users?.name || 'N/A'
+                    const dept = i.students?.department || 'N/A'
+                    const req  = i.students?.credit_hours || 120
+                    let completed = 0
+                    if (i.start_date && i.end_date) {
+                        const weeks = (new Date(i.end_date) - new Date(i.start_date)) / (1000*60*60*24*7)
+                        completed = Math.round(weeks * 40)
+                    }
+                    const pct = Math.min(100, Math.round(completed/req*100))
+                    return '<div style="background:#0e0e18;border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;">' +
+                        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
+                        '<div><div style="font-weight:700;">' + name + '</div><div style="font-size:12px;color:var(--muted);">' + dept + ' · ' + (i.employers?.company_name||'') + '</div></div>' +
+                        '<span class="badge b-pending">Pending</span>' +
+                        '</div>' +
+                        '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px;"><span>Completed: ~' + completed + ' hrs</span><span>Required: ' + req + ' hrs</span></div>' +
+                        '<div style="height:6px;background:var(--border);border-radius:3px;margin-bottom:12px;"><div style="height:100%;background:var(--accent);border-radius:3px;width:' + pct + '%;"></div></div>' +
+                        '<div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Internship: ' + (i.start_date||'?') + ' → ' + (i.end_date||'?') + '</div>' +
+                        '<button class="btn btn-green btn-sm" onclick="initiateVerify(' + (i.students?.id) + ',' + i.id + ',' + completed + ')">✓ Verify Credit Hours</button>' +
+                        '</div>'
+                }).join('') + '</div>'
+        }
+
+        const verified = all.filter(v => v.verified)
+        const tbl = document.getElementById('credit-verified-tbl')
+        tbl.innerHTML = !verified.length
+            ? '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">None verified yet</td></tr>'
+            : verified.map(v => '<tr>' +
+                '<td style="font-weight:600;">' + (v.students?.users?.name||'N/A') + '</td>' +
+                '<td>' + (v.students?.department||'N/A') + '</td>' +
+                '<td>' + v.required_hours + ' hrs</td>' +
+                '<td>' + v.completed_hours + ' hrs</td>' +
+                '<td><span class="badge b-completed">✓ Verified</span></td>' +
+                '<td style="color:var(--muted);">' + (v.verified_at ? v.verified_at.split('T')[0] : '—') + '</td>' +
+                '</tr>'
+            ).join('')
+    } catch(e) { console.error('loadCredit error:', e) }
+}
+
+async function initiateVerify(student_id, internship_id, completed_hours) {
+    try {
+        const cr  = await fetch(API+'/credit/initiate', {
+            method:'POST', headers:H,
+            body: JSON.stringify({ student_id, internship_id })
+        }).then(r=>r.json())
+        const cid = Array.isArray(cr) ? cr[0]?.id : cr?.id
+        if (!cid) { alert('Error creating credit record'); return }
+        await fetch(API+'/credit/'+cid+'/verify', {
+            method:'PUT', headers:H,
+            body: JSON.stringify({ completed_hours })
+        })
+        const wr = await fetch(API+'/workflow/', {headers:H}).then(r=>r.json())
+        const wf = Array.isArray(wr) ? wr.find(w => w.student_id == student_id) : null
+        if (wf) {
+            await fetch(API+'/workflow/'+wf.id+'/advance', {
+                method:'PUT', headers:H,
+                body: JSON.stringify({ stage:'credit_verification', comments:'Credit hours verified by coordinator.' })
+            })
+        }
+        loadCredit()
+    } catch(e) { console.error('initiateVerify error:', e) }
+}
+
+loadOverview()
+</script>
+</body>
+</html>

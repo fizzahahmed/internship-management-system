@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employer Dashboard — IMS</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background:#0f0f0f; color:#eee; font-family:'Segoe UI',sans-serif; }
+        nav { background:#1a1a1a; border-bottom:1px solid #2a2a2a; padding:15px 30px; display:flex; justify-content:space-between; align-items:center; }
+        .card { background:#1a1a1a; border:1px solid #2a2a2a; border-radius:12px; padding:24px; margin-bottom:20px; }
+        .stat-card { background:#1a1a1a; border:1px solid #2a2a2a; border-radius:12px; padding:20px; text-align:center; }
+        .stat-num { font-size:32px; font-weight:800; color:#a78bfa; }
+        .stat-label { color:#888; font-size:12px; margin-top:4px; }
+        h3 { color:#a78bfa; margin-bottom:20px; }
+        table { width:100%; border-collapse:collapse; }
+        th { color:#888; font-size:11px; text-transform:uppercase; letter-spacing:.5px; padding:10px 12px; border-bottom:1px solid #2a2a2a; text-align:left; }
+        td { padding:12px; border-bottom:1px solid #1a1a24; font-size:13px; }
+        tr:last-child td { border-bottom:none; }
+        tr:hover td { background:#1e1e28; }
+        .btn { padding:8px 16px; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; transition:opacity .2s; }
+        .btn:hover { opacity:.85; }
+        .btn-orange { background:#a78bfa; color:white; }
+        .btn-green { background:#22c55e; color:white; }
+        .btn-red { background:#ef4444; color:white; }
+        .btn-outline { background:transparent; border:1px solid #a78bfa; color:#a78bfa; }
+        .form-group { margin-bottom:16px; }
+        .form-group label { display:block; font-size:12px; color:#888; margin-bottom:6px; text-transform:uppercase; letter-spacing:.5px; }
+        .form-group input, .form-group select, .form-group textarea {
+            width:100%; padding:10px 14px; background:#111; border:1px solid #333;
+            border-radius:8px; color:#eee; font-size:13px; outline:none; transition:border .2s;
+        }
+        .form-group input[type="date"] { color-scheme: dark; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color:#a78bfa; }
+        .form-group input[type="file"] { cursor:pointer; color:#888; }
+        option { background:#1a1a1a; }
+        .form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+        .alert { padding:12px; border-radius:8px; margin-bottom:12px; font-size:13px; display:none; }
+        .alert-error { background:#3d0000; color:#ff6b6b; border:1px solid #ef444433; }
+        .alert-success { background:#003d1a; color:#66ffaa; border:1px solid #22c55e33; }
+        .tabs { display:flex; gap:8px; margin-bottom:24px; flex-wrap:wrap; }
+        .tab { padding:8px 18px; border-radius:20px; cursor:pointer; font-size:13px; font-weight:600; border:1px solid #333; color:#888; background:transparent; transition:all .2s; }
+        .tab.active { background:#a78bfa; color:white; border-color:#a78bfa; }
+        .section { display:none; }
+        .section.active { display:block; }
+        .badge-pending  { background:#3d3000; color:#f59e0b; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600; }
+        .badge-accepted { background:#052e16; color:#22c55e; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600; }
+        .badge-rejected { background:#2d0a0a; color:#ef4444; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600; }
+        .badge-ongoing  { background:#1e1b4b; color:#a78bfa; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600; }
+        .cover-cell { max-width:180px; }
+        .cover-text { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#888; font-size:12px; }
+        .cover-file-link { color:#a78bfa; font-size:12px; font-weight:600; text-decoration:none; display:flex; align-items:center; gap:4px; cursor:pointer; background:none; border:none; }
+        .cover-file-link:hover { text-decoration:underline; }
+        .sub-box { background:#111; border:1px solid #2a2a2a; border-radius:8px; padding:16px; margin-bottom:12px; }
+        .sub-answers { font-size:13px; color:#ccc; line-height:1.7; white-space:pre-wrap; margin-top:8px; }
+        .viva-file-link { color:#6c63ff; font-size:13px; font-weight:600; text-decoration:none; }
+        .viva-file-link:hover { text-decoration:underline; }
+        .hint { font-size:12px; color:#666; margin-top:6px; }
+        .table-wrap { overflow-x:auto; }
+        .company-badge { background:#a78bfa22; color:#a78bfa; border:1px solid #a78bfa55; padding:3px 12px; border-radius:20px; font-size:12px; font-weight:600; }
+        .eval-already { background:#1e1b4b; border:1px solid #6c63ff44; border-radius:8px; padding:12px 16px; color:#a78bfa; font-size:13px; margin-bottom:12px; display:none; }
+        .upload-progress { background:#111; border:1px solid #333; border-radius:8px; padding:10px 14px; margin-top:8px; font-size:12px; color:#888; display:none; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <div>
+        <span style="color:#a78bfa; font-weight:700; font-size:18px;">Internship Management System</span>
+        <div style="color:#888; font-size:12px; margin-top:2px;" id="company-sub"></div>
+    </div>
+    <div style="display:flex; align-items:center; gap:14px;">
+        <span id="welcome-msg" style="color:#888; font-size:14px;"></span>
+        <span class="company-badge" id="company-badge"></span>
+        <button class="btn btn-outline" onclick="logout()" style="padding:6px 16px;">Logout</button>
+    </div>
+</nav>
+
+<div style="max-width:1100px; margin:30px auto; padding:0 20px;">
+
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px;">
+        <div class="stat-card"><div class="stat-num" id="stat-listings">0</div><div class="stat-label">Listings Posted</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-pending">0</div><div class="stat-label">Pending Applications</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-interns">0</div><div class="stat-label">Active Interns</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-evals">0</div><div class="stat-label">Evaluations Given</div></div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" onclick="showTab('applications', this)">📋 Applications</button>
+        <button class="tab" onclick="showTab('post', this)">➕ Post Internship</button>
+        <button class="tab" onclick="showTab('interns', this)">🏢 Active Interns</button>
+        <button class="tab" onclick="showTab('evaluate', this)">⭐ Give Evaluation</button>
+        <button class="tab" onclick="showTab('viva', this)">📝 Schedule Viva</button>
+        <button class="tab" onclick="showTab('submissions', this)">📬 View Submissions & Grade</button>
+    </div>
+
+    <!-- APPLICATIONS -->
+    <div class="section active" id="tab-applications">
+        <div class="card">
+            <h3>Incoming Applications</h3>
+            <div class="table-wrap">
+            <table>
+                <thead><tr><th>Student</th><th>Email</th><th>Department</th><th>Position</th><th>Cover Letter</th><th>Status</th><th>Action</th></tr></thead>
+                <tbody id="applications-table">
+                    <tr><td colspan="7" style="text-align:center;color:#888;padding:20px;">Loading...</td></tr>
+                </tbody>
+            </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- POST INTERNSHIP -->
+    <div class="section" id="tab-post">
+        <div class="card">
+            <h3>Post New Internship</h3>
+            <div class="alert alert-error" id="post-error"></div>
+            <div class="alert alert-success" id="post-success"></div>
+            <div class="form-group"><label>Job Title</label><input type="text" id="post-title" placeholder="e.g. Software Engineer Intern"></div>
+            <div class="form-group"><label>Description</label><textarea id="post-desc" rows="4" placeholder="Describe the role, responsibilities..."></textarea></div>
+            <div class="form-group"><label>Required Skills</label><input type="text" id="post-skills" placeholder="e.g. Python, React, Communication"></div>
+            <div class="form-group">
+                <label>Target Department <span style="color:#a78bfa;">(which dept students can apply)</span></label>
+                <select id="post-dept">
+                    <option value="">-- All Departments --</option>
+                    <option value="Computer Science">Computer Science</option>
+                    <option value="Software Engineering">Software Engineering</option>
+                    <option value="Information Technology">Information Technology</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Duration (weeks)</label><input type="number" id="post-duration" value="8" min="1"></div>
+                <div class="form-group"><label>Number of Positions</label><input type="number" id="post-positions" value="1" min="1"></div>
+            </div>
+            <button class="btn btn-orange" onclick="postListing()">Post Internship</button>
+        </div>
+        <div class="card">
+            <h3>My Posted Listings</h3>
+            <div id="my-listings"><p style="color:#888;">Loading...</p></div>
+        </div>
+    </div>
+
+    <!-- ACTIVE INTERNS -->
+    <div class="section" id="tab-interns">
+        <div class="card">
+            <h3>Active Interns</h3>
+            <div class="table-wrap">
+            <table>
+                <thead><tr><th>Name</th><th>Email</th><th>Department</th><th>Start</th><th>End</th><th>Status</th></tr></thead>
+                <tbody id="interns-table"><tr><td colspan="6" style="text-align:center;color:#888;padding:20px;">Loading...</td></tr></tbody>
+            </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- EVALUATE -->
+    <div class="section" id="tab-evaluate">
+        <div class="card">
+            <h3>Give Evaluation</h3>
+            <p style="color:#888; font-size:13px; margin-bottom:20px;">
+                Rate the student's overall performance. Evaluation is only available <strong style="color:#a78bfa;">after the internship end date has passed</strong>.
+            </p>
+            <div class="alert alert-error" id="eval-error"></div>
+            <div class="alert alert-success" id="eval-success"></div>
+            <div class="eval-already" id="eval-already-msg">✓ Evaluation already submitted for this student.</div>
+            <div class="form-group"><label>Select Intern</label><select id="internship-select"><option value="">-- Select Intern --</option></select></div>
+            <div id="eval-ended-warning" style="display:none; background:#3d2e00; color:#f59e0b; padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:14px;">
+                ⏳ This internship has not ended yet. Evaluation will be available after the end date.
+            </div>
+            <div id="eval-form">
+                <div class="form-row">
+                    <div class="form-group"><label>Score (out of 100)</label><input type="number" id="score" min="0" max="100" placeholder="e.g. 85"></div>
+                    <div class="form-group"><label>Comments</label><input type="text" id="comments" placeholder="Brief feedback..."></div>
+                </div>
+                <button class="btn btn-orange" onclick="submitEvaluation()">Submit Evaluation</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIVA -->
+    <div class="section" id="tab-viva">
+        <div class="card">
+            <h3>Schedule Viva Assessment</h3>
+            <p style="color:#888; font-size:13px; margin-bottom:20px;">
+                Schedule a viva for your interns. Choose the type — written questions, MCQ file, or Report.
+                <strong style="color:#a78bfa;"> Do NOT enter marks here — marks are entered after the student submits.</strong>
+            </p>
+            <div class="alert alert-error" id="viva-error"></div>
+            <div class="alert alert-success" id="viva-success"></div>
+            <div class="form-row">
+                <div class="form-group"><label>Select Student</label><select id="viva-student"><option value="">-- Select Student --</option></select></div>
+                <div class="form-group">
+                    <label>Assessment Date</label>
+                    <!-- DATE PICKER: native date input replaces prompt() -->
+                    <input type="date" id="viva-date">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Assessment Type</label>
+                <select id="viva-type" onchange="toggleVivaFields()">
+                    <option value="written">Written Questions (student types answers on portal)</option>
+                    <option value="mcq">MCQ / Quiz (you attach a file → student downloads, completes, uploads back)</option>
+                    <option value="report">Report Submission (student uploads a report file)</option>
+                </select>
+            </div>
+            <div id="viva-written-group" class="form-group">
+                <label>Questions / Instructions</label>
+                <textarea id="viva-questions" rows="6" placeholder="Type your questions here..."></textarea>
+            </div>
+            <div id="viva-mcq-group" style="display:none;">
+                <div class="form-group">
+                    <label>Attach MCQ / Quiz File (PDF or Word)</label>
+                    <input type="file" id="viva-mcq-file" accept=".pdf,.doc,.docx">
+                    <div class="hint">File will be uploaded to Supabase Storage. Student will see a download link.</div>
+                </div>
+                <div class="form-group">
+                    <label>Additional Instructions (optional)</label>
+                    <textarea id="viva-mcq-instructions" rows="3" placeholder="e.g. Answer all 20 questions..."></textarea>
+                </div>
+            </div>
+            <div id="viva-report-group" style="display:none;">
+                <div class="form-group">
+                    <label>Report Instructions</label>
+                    <textarea id="viva-report-instructions" rows="4" placeholder="e.g. Write a 1500-word internship report..."></textarea>
+                </div>
+            </div>
+            <div class="upload-progress" id="upload-progress">⏳ Uploading file...</div>
+            <button class="btn btn-orange" onclick="scheduleViva()">Schedule & Notify Student</button>
+        </div>
+    </div>
+
+    <!-- SUBMISSIONS & GRADE -->
+    <div class="section" id="tab-submissions">
+        <div class="card">
+            <h3>Student Viva Submissions</h3>
+            <p style="color:#888; font-size:13px; margin-bottom:20px;">View what students submitted. After reviewing, enter their marks below.</p>
+            <div class="form-group">
+                <label>Select Viva Assessment</label>
+                <select id="sub-viva-select" onchange="loadSubmissionView()"><option value="">-- Select a scheduled viva --</option></select>
+            </div>
+            <div id="submission-view"><p style="color:#666; font-size:13px;">Select a viva above to view submissions.</p></div>
+        </div>
+        <div class="card" id="grade-card" style="display:none;">
+            <h3>Enter Marks</h3>
+            <div class="alert alert-error" id="grade-error"></div>
+            <div class="alert alert-success" id="grade-success"></div>
+            <div class="form-row">
+                <div class="form-group"><label>Marks (out of 100)</label><input type="number" id="grade-marks" min="0" max="100" placeholder="e.g. 78"></div>
+                <div class="form-group"><label>Remarks</label><input type="text" id="grade-remarks" placeholder="Brief feedback..."></div>
+            </div>
+            <button class="btn btn-orange" onclick="submitGrade()">Save Marks → Student sees result</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+const API           = 'http://127.0.0.1:5000/api'
+const token         = localStorage.getItem('token')
+const headers       = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+// Supabase Storage config — replace with your actual values
+const SUPABASE_URL   = 'https://lwrlutrxhylxqukwzvrd.supabase.co'
+const SUPABASE_ANON  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3cmx1dHJ4aHlseHF1a3d6dnJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MDg3ODUsImV4cCI6MjA5NTE4NDc4NX0.B8wkDEHDrjSaGKz1W7Ee9mcrAJJ9GnjOcxCzrNBQ_68'
+const STORAGE_BUCKET = 'internship-files'
+
+let selectedVivaId = null
+let cachedInterns  = []
+let submittedEvalInternshipIds = new Set()
+
+if (!token) window.location.href = 'login.html'
+function logout() { localStorage.clear(); window.location.href = 'login.html' }
+
+const empName     = localStorage.getItem('name')         || 'Employer'
+const companyName = localStorage.getItem('company_name') || ''
+document.getElementById('welcome-msg').textContent  = empName
+document.getElementById('company-badge').textContent = companyName
+document.getElementById('company-sub').textContent   = companyName
+
+// ── Upload file to Supabase Storage ──────────────────────────
+async function uploadToSupabase(file, folder) {
+    const fileName  = `${folder}/${Date.now()}_${file.name.replace(/\s+/g, '_')}`
+    const uploadUrl = `${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${fileName}`
+    const res = await fetch(uploadUrl, {
+        method:  'POST',
+        headers: {
+            'Authorization': `Bearer ${SUPABASE_ANON}`,
+            'Content-Type':  file.type || 'application/octet-stream',
+            'x-upsert':      'true'
+        },
+        body: file
+    })
+    if (!res.ok) throw new Error('Upload failed: ' + res.statusText)
+    // Return public URL
+    return `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${fileName}`
+}
+
+function showTab(tab, el) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'))
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
+    document.getElementById('tab-' + tab).classList.add('active')
+    el.classList.add('active')
+    if (tab === 'applications') loadApplications()
+    if (tab === 'post')         loadMyListings()
+    if (tab === 'interns')      loadInterns()
+    if (tab === 'evaluate')     { loadInterns(); loadSubmittedEvals(); resetEvalForm() }
+    if (tab === 'viva')         loadInterns()
+    if (tab === 'submissions')  loadVivaDropdown()
+}
+
+function toggleVivaFields() {
+    const type = document.getElementById('viva-type').value
+    document.getElementById('viva-written-group').style.display = type === 'written' ? 'block' : 'none'
+    document.getElementById('viva-mcq-group').style.display     = type === 'mcq'     ? 'block' : 'none'
+    document.getElementById('viva-report-group').style.display  = type === 'report'  ? 'block' : 'none'
+}
+
+// ── STATS ────────────────────────────────────────
+async function loadStats() {
+    try {
+        const [a, i, e, l] = await Promise.all([
+            fetch(`${API}/applications/for-employer`, {headers}).then(r=>r.json()),
+            fetch(`${API}/internships/`,              {headers}).then(r=>r.json()),
+            fetch(`${API}/evaluations/`,              {headers}).then(r=>r.json()),
+            fetch(`${API}/listings/my`,               {headers}).then(r=>r.json())
+        ])
+        document.getElementById('stat-listings').textContent = Array.isArray(l) ? l.length : 0
+        document.getElementById('stat-pending').textContent  = Array.isArray(a) ? a.filter(x=>x.status==='pending').length : 0
+        document.getElementById('stat-interns').textContent  = Array.isArray(i) ? i.length : 0
+        document.getElementById('stat-evals').textContent    = Array.isArray(e) ? e.length : 0
+    } catch(e) { console.error(e) }
+}
+
+// ── APPLICATIONS ─────────────────────────────────
+async function loadApplications() {
+    try {
+        const res  = await fetch(`${API}/applications/for-employer`, {headers})
+        const apps = await res.json()
+        const tbl  = document.getElementById('applications-table')
+        if (!Array.isArray(apps) || !apps.length) {
+            tbl.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;padding:20px;">No applications yet.</td></tr>'
+            return
+        }
+        tbl.innerHTML = apps.map(a => {
+            const cl      = a.cover_letter || ''
+            const isUrl   = cl.startsWith('http')                   // new: full Supabase URL
+            const isLegacy = cl.startsWith('[Attached file:')       // old: [Attached file: name]
+            let coverCell = ''
+            if (isUrl) {
+                // Extract clean filename: strip timestamp prefix e.g. "1234567_cover.pdf" → "cover.pdf"
+                const rawName  = cl.split('/').pop()
+                const dispName = rawName.replace(/^\d+_/, '')
+                const short    = dispName.length > 22 ? dispName.slice(0, 20) + '…' : dispName
+                coverCell = `<a href="${cl}" target="_blank" class="cover-file-link" title="${dispName}">📎 ${short}</a>`
+            } else if (isLegacy) {
+                const fileName = cl.replace('[Attached file: ', '').replace(']', '')
+                const short    = fileName.length > 22 ? fileName.slice(0, 20) + '…' : fileName
+                coverCell = `<button class="cover-file-link" onclick="openFile('${fileName.replace(/'/g,"\\'")}', 'covers')" title="${fileName}">📎 ${short}</button>`
+            } else {
+                coverCell = `<span class="cover-text" title="${cl}">${cl || '—'}</span>`
+            }
+            return `<tr>
+                <td style="font-weight:600;">${a.students?.users?.name || 'N/A'}</td>
+                <td style="color:#888;">${a.students?.users?.email || 'N/A'}</td>
+                <td>${a.students?.department || 'N/A'}</td>
+                <td>${a.internship_listings?.title || 'N/A'}</td>
+                <td class="cover-cell">${coverCell}</td>
+                <td><span class="badge-${a.status}">${a.status}</span></td>
+                <td>${a.status === 'pending' ? `
+                    <button class="btn btn-green" style="margin-right:6px;padding:4px 10px;" onclick="updateApp(${a.id},'accepted')">Accept</button>
+                    <button class="btn btn-red" style="padding:4px 10px;" onclick="updateApp(${a.id},'rejected')">Reject</button>
+                ` : '—'}</td>
+            </tr>`
+        }).join('')
+    } catch(e) { console.error(e) }
+}
+
+// Open file from Supabase Storage
+function openFile(fileName, folder) {
+    // If fileName is already a full URL (uploaded to Supabase), open directly
+    if (fileName.startsWith('http')) {
+        window.open(fileName, '_blank')
+        return
+    }
+    // Otherwise try to construct the public URL
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${folder}/${fileName}`
+    window.open(url, '_blank')
+}
+
+async function updateApp(appId, status) {
+    let startDate = null, endDate = null
+    if (status === 'accepted') {
+        // Use a small inline date form instead of prompt()
+        startDate = window.prompt('Internship start date (YYYY-MM-DD):')
+        if (!startDate) return
+        endDate = window.prompt('Internship end date (YYYY-MM-DD):')
+        if (!endDate) return
+    }
+    await fetch(`${API}/applications/${appId}/status`, {
+        method: 'PUT', headers,
+        body: JSON.stringify({ status, start_date: startDate, end_date: endDate })
+    })
+    loadApplications(); loadStats()
+}
+
+// ── POST LISTING ─────────────────────────────────
+async function postListing() {
+    const errEl = document.getElementById('post-error')
+    const sucEl = document.getElementById('post-success')
+    errEl.style.display = 'none'; sucEl.style.display = 'none'
+    const title = document.getElementById('post-title').value
+    if (!title) { errEl.textContent = 'Title is required'; errEl.style.display = 'block'; return }
+    const res = await fetch(`${API}/listings/`, {
+        method: 'POST', headers,
+        body: JSON.stringify({
+            title,
+            description:       document.getElementById('post-desc').value,
+            required_skills:   document.getElementById('post-skills').value,
+            target_department: document.getElementById('post-dept').value,
+            duration_weeks:    parseInt(document.getElementById('post-duration').value) || 8,
+            positions:         parseInt(document.getElementById('post-positions').value) || 1
+        })
+    })
+    if (res.ok) {
+        sucEl.textContent = 'Internship posted!'
+        sucEl.style.display = 'block'
+        document.getElementById('post-title').value = ''
+        document.getElementById('post-desc').value = ''
+        document.getElementById('post-skills').value = ''
+        document.getElementById('post-dept').value = ''
+        loadMyListings(); loadStats()
+    }
+}
+
+async function loadMyListings() {
+    const res      = await fetch(`${API}/listings/my`, {headers})
+    const listings = await res.json()
+    const el       = document.getElementById('my-listings')
+    if (!Array.isArray(listings) || !listings.length) { el.innerHTML = '<p style="color:#888;">No listings yet.</p>'; return }
+    el.innerHTML = listings.map(l => `
+        <div style="background:#111; border:1px solid #2a2a2a; border-radius:8px; padding:16px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <div style="font-weight:600;">${l.title}</div>
+                <div style="color:#888; font-size:12px; margin-top:4px;">${l.duration_weeks}w · ${l.positions} position(s) · ${l.required_skills || '—'}${l.target_department ? ' · <span style="color:#a78bfa;">'+l.target_department+'</span>' : ''}</div>
+            </div>
+            <span style="background:${l.status==='open'?'#052e16':'#2d0a0a'}; color:${l.status==='open'?'#22c55e':'#ef4444'}; padding:4px 12px; border-radius:12px; font-size:12px;">${l.status}</span>
+        </div>
+    `).join('')
+}
+
+// ── INTERNS ──────────────────────────────────────
+async function loadInterns() {
+    const res    = await fetch(`${API}/internships/`, {headers})
+    const interns = await res.json()
+    cachedInterns = Array.isArray(interns) ? interns : []
+
+    const tbl = document.getElementById('interns-table')
+    if (tbl) {
+        tbl.innerHTML = !cachedInterns.length
+            ? '<tr><td colspan="6" style="text-align:center;color:#888;padding:20px;">No active interns yet</td></tr>'
+            : cachedInterns.map(x => `<tr>
+                <td style="font-weight:600;">${x.students?.users?.name || 'N/A'}</td>
+                <td style="color:#888;">${x.students?.users?.email || 'N/A'}</td>
+                <td>${x.students?.department || 'N/A'}</td>
+                <td>${x.start_date || '—'}</td>
+                <td>${x.end_date || '—'}</td>
+                <td><span class="badge-ongoing">${x.status}</span></td>
+            </tr>`).join('')
+    }
+
+    // Evaluation dropdown
+    const sel   = document.getElementById('internship-select')
+    const today = new Date()
+    if (sel) {
+        sel.innerHTML = '<option value="">-- Select Intern --</option>'
+        cachedInterns.forEach(x => {
+            const o       = document.createElement('option')
+            o.value       = x.id
+            o.dataset.endDate = x.end_date || ''
+            const ended   = x.end_date ? new Date(x.end_date) < today : false
+            o.textContent = `${x.students?.users?.name || 'Student'} — ${x.start_date || '?'} to ${x.end_date || '?'}${ended ? '' : ' (not ended yet)'}`
+            sel.appendChild(o)
+        })
+        sel.onchange = checkEvalAvailability
+    }
+
+    // Viva student dropdown
+    const vs = document.getElementById('viva-student')
+    if (vs) {
+        vs.innerHTML = '<option value="">-- Select Student --</option>'
+        cachedInterns.forEach(x => {
+            const o   = document.createElement('option')
+            o.value   = x.students?.id
+            o.textContent = x.students?.users?.name || 'Student'
+            vs.appendChild(o)
+        })
+    }
+}
+
+// ── Load which internships already have evaluations ──────────
+async function loadSubmittedEvals() {
+    try {
+        const res   = await fetch(`${API}/evaluations/`, {headers})
+        const evals = await res.json()
+        submittedEvalInternshipIds = new Set(
+            Array.isArray(evals) ? evals.map(e => String(e.internship_id)) : []
+        )
+    } catch(e) { submittedEvalInternshipIds = new Set() }
+}
+
+function resetEvalForm() {
+    document.getElementById('eval-ended-warning').style.display = 'none'
+    document.getElementById('eval-already-msg').style.display   = 'none'
+    document.getElementById('eval-form').style.display          = 'block'
+    document.getElementById('eval-error').style.display         = 'none'
+    document.getElementById('eval-success').style.display       = 'none'
+}
+
+function checkEvalAvailability() {
+    const sel = document.getElementById('internship-select')
+    const opt = sel.options[sel.selectedIndex]
+    if (!opt || !opt.value) { resetEvalForm(); return }
+
+    // Check if already evaluated
+    if (submittedEvalInternshipIds.has(String(opt.value))) {
+        document.getElementById('eval-already-msg').style.display   = 'block'
+        document.getElementById('eval-ended-warning').style.display = 'none'
+        document.getElementById('eval-form').style.display          = 'none'
+        return
+    }
+
+    document.getElementById('eval-already-msg').style.display = 'none'
+    const today   = new Date()
+    const ended   = opt.dataset.endDate ? new Date(opt.dataset.endDate) < today : false
+    document.getElementById('eval-ended-warning').style.display = ended ? 'none' : 'block'
+    document.getElementById('eval-form').style.display          = ended ? 'block' : 'none'
+}
+
+// ── EVALUATION ───────────────────────────────────
+async function submitEvaluation() {
+    const internship_id = document.getElementById('internship-select').value
+    const score         = document.getElementById('score').value
+    const comments      = document.getElementById('comments').value
+    const errEl = document.getElementById('eval-error')
+    const sucEl = document.getElementById('eval-success')
+    errEl.style.display = 'none'; sucEl.style.display = 'none'
+
+    if (!internship_id || !score) {
+        errEl.textContent = 'Please select an intern and enter a score'
+        errEl.style.display = 'block'; return
+    }
+
+    const res = await fetch(`${API}/evaluations/`, {
+        method: 'POST', headers,
+        body: JSON.stringify({ internship_id, score: parseInt(score), comments })
+    })
+    const data = await res.json()
+    if (!res.ok) {
+        errEl.textContent = data.error || 'Failed to submit'
+        errEl.style.display = 'block'; return
+    }
+    sucEl.textContent = 'Evaluation submitted!'
+    sucEl.style.display = 'block'
+    document.getElementById('score').value    = ''
+    document.getElementById('comments').value = ''
+    submittedEvalInternshipIds.add(String(internship_id))
+    checkEvalAvailability()
+    loadStats()
+}
+
+// ── VIVA SCHEDULING ──────────────────────────────
+async function scheduleViva() {
+    const student_id      = document.getElementById('viva-student').value
+    const date            = document.getElementById('viva-date').value
+    const assessment_type = document.getElementById('viva-type').value
+    const errEl = document.getElementById('viva-error')
+    const sucEl = document.getElementById('viva-success')
+    errEl.style.display = 'none'; sucEl.style.display = 'none'
+
+    if (!student_id || !date) {
+        errEl.textContent = 'Please select a student and date'
+        errEl.style.display = 'block'; return
+    }
+
+    let questions     = ''
+    let mcq_file_url  = ''
+
+    if (assessment_type === 'written') {
+        questions = document.getElementById('viva-questions').value
+
+    } else if (assessment_type === 'mcq') {
+        const fileInput = document.getElementById('viva-mcq-file')
+        if (!fileInput.files.length) {
+            errEl.textContent = 'Please attach the MCQ file'
+            errEl.style.display = 'block'; return
+        }
+        try {
+            document.getElementById('upload-progress').style.display = 'block'
+            mcq_file_url = await uploadToSupabase(fileInput.files[0], 'mcq-files')
+            document.getElementById('upload-progress').style.display = 'none'
+        } catch(e) {
+            document.getElementById('upload-progress').style.display = 'none'
+            errEl.textContent = 'File upload failed: ' + e.message
+            errEl.style.display = 'block'; return
+        }
+        const instructions = document.getElementById('viva-mcq-instructions').value
+        questions = `[MCQ_FILE_URL:${mcq_file_url}]\n\n${instructions}`
+
+    } else if (assessment_type === 'report') {
+        questions = document.getElementById('viva-report-instructions').value
+    }
+
+    const res = await fetch(`${API}/viva/`, {
+        method: 'POST', headers,
+        body: JSON.stringify({ student_id: parseInt(student_id), date, assessment_type, questions })
+    })
+    if (res.ok) {
+        sucEl.textContent = 'Viva scheduled for ' + date + '.'
+        sucEl.style.display = 'block'
+        document.getElementById('viva-questions').value = ''
+        document.getElementById('viva-date').value      = ''
+    } else {
+        const d = await res.json()
+        errEl.textContent = d.error || 'Failed to schedule'
+        errEl.style.display = 'block'
+    }
+}
+
+// ── SUBMISSIONS & GRADING ────────────────────────
+async function loadVivaDropdown() {
+    const [vivaRes, internsRes] = await Promise.all([
+        fetch(`${API}/viva/`,         {headers}).then(r=>r.json()),
+        fetch(`${API}/internships/`,  {headers}).then(r=>r.json())
+    ])
+    const vivas   = Array.isArray(vivaRes)   ? vivaRes   : []
+    const interns = Array.isArray(internsRes) ? internsRes : []
+    const myStudentIds = new Set(interns.map(i => i.students?.id).filter(Boolean))
+
+    const sel = document.getElementById('sub-viva-select')
+    sel.innerHTML = '<option value="">-- Select a scheduled viva --</option>'
+    vivas.filter(v => myStudentIds.has(v.student_id)).forEach(v => {
+        const o = document.createElement('option')
+        o.value = v.id
+        o.textContent = (v.students?.users?.name || 'Student') +
+            ' — ' + (v.date || 'No date') +
+            ' (' + v.assessment_type + ') ' +
+            (v.marks !== null ? '✓ Graded' : '⏳ Awaiting')
+        sel.appendChild(o)
+    })
+}
+
+async function loadSubmissionView() {
+    const vivaId    = document.getElementById('sub-viva-select').value
+    const container = document.getElementById('submission-view')
+    const gradeCard = document.getElementById('grade-card')
+    selectedVivaId  = vivaId
+    gradeCard.style.display = 'none'
+
+    if (!vivaId) { container.innerHTML = '<p style="color:#666;font-size:13px;">Select a viva above.</p>'; return }
+
+    try {
+        const [subRes, vivaRes] = await Promise.all([
+            fetch(`${API}/viva/${vivaId}/submissions`, {headers}).then(r=>r.json()),
+            fetch(`${API}/viva/`,                      {headers}).then(r=>r.json())
+        ])
+        const subs     = Array.isArray(subRes)  ? subRes  : []
+        const allVivas = Array.isArray(vivaRes)  ? vivaRes : []
+        const viva     = allVivas.find(v => v.id == vivaId)
+
+        if (!subs.length) {
+            container.innerHTML = `
+                <div style="background:#111; border:1px solid #2a2a2a; border-radius:8px; padding:20px; text-align:center; color:#666;">
+                    <div style="font-size:24px; margin-bottom:8px;">⏳</div>
+                    <div>Student has not submitted yet.</div>
+                </div>`
+            return
+        }
+
+        container.innerHTML = subs.map(s => {
+            // file_url is now a full Supabase Storage URL
+            const hasFileUrl = s.file_url && s.file_url.startsWith('http')
+            const isAttached = s.file_url && s.file_url.startsWith('[Attached:')
+            const fileName   = isAttached ? s.file_url.replace('[Attached: ','').replace(']','') : ''
+
+            let fileHtml = ''
+            if (hasFileUrl) {
+                fileHtml = `<div style="margin-bottom:10px;"><a class="viva-file-link" href="${s.file_url}" target="_blank">📎 Open Submitted File</a></div>`
+            } else if (isAttached) {
+                fileHtml = `<div style="margin-bottom:10px;"><span style="color:#888;font-size:12px;">📎 ${fileName} (file not stored — Supabase Storage not configured)</span></div>`
+            }
+
+            return `
+            <div class="sub-box">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <span style="font-weight:700; font-size:15px;">${s.students?.users?.name || 'Student'}</span>
+                    <span style="color:#888;font-size:12px;">Submitted: ${s.submitted_at ? s.submitted_at.split('T')[0] : 'N/A'}</span>
+                </div>
+                ${fileHtml}
+                ${s.answers ? `<div style="color:#888;font-size:12px;margin-bottom:6px;">Written answers:</div><div class="sub-answers">${s.answers}</div>` : ''}
+            </div>`
+        }).join('')
+
+        if (viva && viva.marks === null) {
+            gradeCard.style.display = 'block'
+        } else if (viva && viva.marks !== null) {
+            container.innerHTML += `<div style="background:#052e16;border:1px solid #22c55e33;border-radius:8px;padding:14px;margin-top:12px;color:#22c55e;font-weight:600;">✓ Already graded: ${viva.marks}/100${viva.remarks ? ' — ' + viva.remarks : ''}</div>`
+        }
+    } catch(e) { console.error(e) }
+}
+
+async function submitGrade() {
+    const marks   = document.getElementById('grade-marks').value
+    const remarks = document.getElementById('grade-remarks').value
+    const errEl   = document.getElementById('grade-error')
+    const sucEl   = document.getElementById('grade-success')
+    errEl.style.display = 'none'; sucEl.style.display = 'none'
+
+    if (!selectedVivaId || !marks) {
+        errEl.textContent = 'Please enter marks'
+        errEl.style.display = 'block'; return
+    }
+    const res = await fetch(`${API}/viva/${selectedVivaId}/grade`, {
+        method: 'PUT', headers,
+        body: JSON.stringify({ marks: parseInt(marks), remarks })
+    })
+    if (res.ok) {
+        sucEl.textContent = `Marks saved (${marks}/100).`
+        sucEl.style.display = 'block'
+        document.getElementById('grade-card').style.display = 'none'
+        loadVivaDropdown()
+    }
+}
+
+loadStats()
+loadApplications()
+</script>
+</body>
+</html>

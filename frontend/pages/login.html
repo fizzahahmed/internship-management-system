@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — Internship System</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div class="auth-wrapper">
+        <div class="auth-box">
+            <h2>Internship System</h2>
+            <p style="text-align:center; color:#888; margin-bottom:24px; margin-top:-16px">Sign in to your account</p>
+
+            <div class="alert alert-error" id="error-msg"></div>
+            <div class="alert alert-success" id="success-msg"></div>
+
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="email" placeholder="Enter your email">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="password" placeholder="Enter your password">
+            </div>
+
+            <button class="btn btn-primary" onclick="login()">Sign In</button>
+
+            <p>Don't have an account? <a href="register.html">Register here</a></p>
+        </div>
+    </div>
+
+    <script src="../js/auth.js"></script>
+</body>
+</html>
