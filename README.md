@@ -48,9 +48,9 @@ A full-stack web application developed as a 4th semester university project to s
 
 ---
 
-### Database Schema
+### Schema
 
-![Database Schema](Screenshots/Schema.jpg)
+![Schema](Screenshots/Schema.jpg)
 
 ---
 
