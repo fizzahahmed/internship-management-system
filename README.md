@@ -50,7 +50,7 @@ A full-stack web application developed as a 4th semester university project to s
 
 ### Schema
 
-![Schema](Screenshots/Schema.jpg)
+![Schema](Screenshots/Schema.png)
 
 ---
 
