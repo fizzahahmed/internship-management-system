@@ -144,7 +144,7 @@ The **Presentation** folder contains the project presentation, including:
 
 ### Entity Relationship Diagram (ERD)
 
-![Entity Relationship Diagram](Screenshots/Entity%20Relationship%20Diagram.jpg)
+![Entity Relationship Diagram](Screenshots/ERD.png)
 
 ---
 
