@@ -16,48 +16,6 @@ A full-stack web application developed as a 4th semester university project to s
 - Credit Verification
 - File Uploads using Supabase Storage
 
-## Project Screenshots
-
-### Login Page
-
-![Login Page](Screenshots/Login%20page.jpg)
-
----
-
-### Registration Page
-
-![Registration Page](Screenshots/Registration%20page.jpg)
-
----
-
-### Student Dashboard
-
-![Student Dashboard](Screenshots/Student%20Dashboard.jpg)
-
----
-
-### Employer Dashboard
-
-![Employer Dashboard](Screenshots/Employer%20Dashboard.jpg)
-
----
-
-### Coordinator Dashboard
-
-![Coordinator Dashboard](Screenshots/Coordinator%20Dashboard.jpg)
-
----
-
-### Schema
-
-![Schema](Screenshots/Schema.png)
-
----
-
-### Entity Relationship Diagram
-
-![Entity Relationship Diagram](Screenshots/Entity%20Relationship%20Diagram.jpg)
-
 ## Tech Stack
 
 ### Frontend
