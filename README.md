@@ -61,6 +61,10 @@ internship-management-system/
 ├── Documentation/
 │   └── Internship_Management_System_Report.pdf
 │
+├── Screenshots/
+│   ├── Schema.png
+│   └── Entity Relationship Diagram.jpg
+│
 ├── README.md
 └── .gitignore
 ```
@@ -130,6 +134,20 @@ The **Presentation** folder contains the project presentation, including:
 
 ---
 
+## System Design
+
+### Database Schema
+
+![Schema](Screenshots/Schema.png)
+
+---
+
+### Entity Relationship Diagram (ERD)
+
+![Entity Relationship Diagram](Screenshots/Entity%20Relationship%20Diagram.jpg)
+
+---
+
 ## Future Enhancements
 
 - Email Notifications
@@ -147,6 +165,12 @@ The **Presentation** folder contains the project presentation, including:
 **Fizzah Ahmed**
 
 Bachelor of Computer Science (4th Semester)
+
+---
+
+## License
+
+This project was developed for educational and learning purposes.
 
 ---
 
