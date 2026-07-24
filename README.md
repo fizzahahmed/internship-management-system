@@ -172,8 +172,3 @@ Bachelor of Computer Science (4th Semester)
 
 This project was developed for educational and learning purposes.
 
----
-
-## License
-
-This project was developed for educational and learning purposes.
